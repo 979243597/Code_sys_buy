@@ -190,7 +190,7 @@ jobs:
           Usage on the server:
           1. Copy the image archive and this bundle to the same directory.
           2. Load the image:
-             docker load -i ${IMAGE_NAME}-${BUILD_VERSION}-${ARCH_SLUG}.tar.gz
+             docker load -i new-api-artifact-*.tar.gz
           3. Create runtime folders:
              mkdir -p data logs
           4. Start:
@@ -201,18 +201,21 @@ jobs:
           - If you use the AI Deployer desktop client, also read ai-deployer-client-compat.md.
           EOF
 
-          cat > "${BUNDLE_DIR}/load-image-and-start.sh" <<EOF
+          cat > "${BUNDLE_DIR}/load-image-and-start.sh" <<'EOF'
           #!/usr/bin/env bash
           set -euo pipefail
-          IMAGE_ARCHIVE="${IMAGE_NAME}-${BUILD_VERSION}-${ARCH_SLUG}.tar.gz"
+          IMAGE_ARCHIVE="$(ls new-api-artifact-*.tar.gz | head -n 1)"
           docker load -i "$IMAGE_ARCHIVE"
           mkdir -p data logs
           docker compose -f docker-compose.artifact.yml up -d
           EOF
           chmod +x "${BUNDLE_DIR}/load-image-and-start.sh"
 
-          cat > "${BUNDLE_DIR}/load-image-and-start.ps1" <<EOF
-          \$ImageArchive = "${IMAGE_NAME}-${BUILD_VERSION}-${ARCH_SLUG}.tar.gz"
+          cat > "${BUNDLE_DIR}/load-image-and-start.ps1" <<'EOF'
+          $ImageArchive = Get-ChildItem -Filter 'new-api-artifact-*.tar.gz' | Select-Object -First 1 -ExpandProperty Name
+          if (-not $ImageArchive) {
+            throw "Image archive not found in current directory."
+          }
           docker load -i \$ImageArchive
           New-Item -ItemType Directory -Force -Path .\\data | Out-Null
           New-Item -ItemType Directory -Force -Path .\\logs | Out-Null
