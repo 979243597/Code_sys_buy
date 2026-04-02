@@ -39,6 +39,7 @@ import CompactModeToggle from '../../common/ui/CompactModeToggle';
 import {
   Avatar,
   Button,
+  Card,
   Col,
   Dropdown,
   Empty,
@@ -58,6 +59,7 @@ import {
 } from '@douyinfe/semi-illustrations';
 import {
   IconClose,
+  IconCreditCard,
   IconDownload,
   IconKey,
   IconMore,
@@ -424,18 +426,18 @@ const ClientLicensesDescription = ({
 }) => (
   <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full'>
     <div className='flex flex-col gap-2'>
-      <div className='flex items-center text-violet-500'>
+      <div className='flex items-center text-orange-500'>
         <KeyRound size={16} className='mr-2' />
         <Typography.Text>{t('客户端卡密管理')}</Typography.Text>
       </div>
       <div className='flex flex-wrap gap-2'>
-        <Tag color='blue' shape='circle'>
+        <Tag color='blue' shape='circle' size='small'>
           {t('总数')} {total}
         </Tag>
-        <Tag color='cyan' shape='circle'>
+        <Tag color='cyan' shape='circle' size='small'>
           {t('已激活')} {activatedCount}
         </Tag>
-        <Tag color='green' shape='circle'>
+        <Tag color='green' shape='circle' size='small'>
           {t('可用中')} {enabledCount}
         </Tag>
       </div>
@@ -535,11 +537,11 @@ const ClientLicensesActions = ({
       >
         {t('批量复制')}
       </Button>
-      <Button
-        type='secondary'
-        className='flex-1 md:flex-initial'
-        onClick={batchExportLicenses}
-        size='small'
+              <Button
+                type='tertiary'
+                className='flex-1 md:flex-initial'
+                onClick={batchExportLicenses}
+                size='small'
         icon={<IconDownload />}
       >
         {t('批量导出')}
@@ -726,7 +728,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
         >
           {({ values }) => (
             <div className='p-2'>
-              <div className='mb-6 rounded-2xl border border-[var(--semi-color-border)] bg-[var(--semi-color-bg-1)] p-4'>
+              <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
                 <div className='mb-3 flex items-center'>
                   <Avatar size='small' color='blue' className='mr-2 shadow-md'>
                     <IconKey size='small' />
@@ -814,12 +816,12 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                     />
                   </Col>
                 </Row>
-              </div>
+              </Card>
 
-              <div className='mb-6 rounded-2xl border border-[var(--semi-color-border)] bg-[var(--semi-color-bg-1)] p-4'>
+              <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
                 <div className='mb-3 flex items-center'>
                   <Avatar size='small' color='green' className='mr-2 shadow-md'>
-                    <IconKey size='small' />
+                    <IconCreditCard size='small' />
                   </Avatar>
                   <div>
                     <Typography.Text strong>{t('额度配置')}</Typography.Text>
@@ -848,9 +850,9 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                     />
                   </Col>
                 </Row>
-              </div>
+              </Card>
 
-              <div className='rounded-2xl border border-[var(--semi-color-border)] bg-[var(--semi-color-bg-1)] p-4'>
+              <Card className='!rounded-2xl shadow-sm border-0'>
                 <div className='mb-3 flex items-center'>
                   <Avatar size='small' color='grey' className='mr-2 shadow-md'>
                     <IconKey size='small' />
@@ -872,7 +874,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                     />
                   </Col>
                 </Row>
-              </div>
+              </Card>
             </div>
           )}
         </Form>
