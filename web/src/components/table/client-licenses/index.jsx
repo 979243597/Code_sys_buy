@@ -58,6 +58,7 @@ import {
 } from '@douyinfe/semi-illustrations';
 import {
   IconClose,
+  IconDownload,
   IconKey,
   IconMore,
   IconSave,
@@ -107,6 +108,9 @@ const isExpired = (record) =>
   getEffectiveExpiredTime(record) > 0 &&
   getEffectiveExpiredTime(record) < currentUnix();
 
+const isActivated = (record) =>
+  !!record && ((record.activated_time || 0) > 0 || (record.last_redeem_time || 0) > 0);
+
 const statusTag = (record, t) => {
   if (isExpired(record)) {
     return { color: 'orange', text: t('已过期') };
@@ -115,6 +119,13 @@ const statusTag = (record, t) => {
     return { color: 'red', text: t('已禁用') };
   }
   return { color: 'green', text: t('生效中') };
+};
+
+const activationTag = (record, t) => {
+  if (isActivated(record)) {
+    return { color: 'blue', text: t('已激活') };
+  }
+  return { color: 'grey', text: t('未激活') };
 };
 
 const maskText = (text) => {
@@ -289,6 +300,59 @@ const useClientLicensesData = () => {
     await copyText(text);
   };
 
+  const batchExportLicenses = async () => {
+    const exportRows = selectedRows.length > 0 ? selectedRows : licenses;
+    if (exportRows.length === 0) {
+      showError(t('当前没有可导出的卡密数据'));
+      return;
+    }
+    const header = [
+      'id',
+      'name',
+      'code',
+      'activation_status',
+      'card_status',
+      'unlimited_quota',
+      'quota',
+      'duration_days',
+      'created_time',
+      'activated_time',
+      'last_redeem_time',
+      'effective_expired_time',
+      'device_hash',
+      'token_id',
+      'user_id',
+    ];
+    const lines = exportRows.map((item) =>
+      [
+        item.id,
+        `"${(item.name || item.code || '').replaceAll('"', '""')}"`,
+        `"${(item.code || '').replaceAll('"', '""')}"`,
+        isActivated(item) ? 'activated' : 'pending',
+        item.status || '',
+        item.unlimited_quota ? 'true' : 'false',
+        item.quota ?? 0,
+        item.duration_days ?? 0,
+        item.created_time ?? 0,
+        item.activated_time ?? 0,
+        item.last_redeem_time ?? 0,
+        getEffectiveExpiredTime(item),
+        `"${(item.device_hash || '').replaceAll('"', '""')}"`,
+        item.token_id ?? 0,
+        item.user_id ?? 0,
+      ].join(','),
+    );
+    downloadTextAsFile(
+      [header.join(','), ...lines].join('\n'),
+      `client-licenses-${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+    showSuccess(
+      selectedRows.length > 0
+        ? t('已导出所选卡密')
+        : t('已导出当前页卡密'),
+    );
+  };
+
   const rowSelection = {
     onChange: (selectedRowKeys, rows) => {
       setSelectedRows(rows);
@@ -341,6 +405,7 @@ const useClientLicensesData = () => {
     manageLicense,
     copyText,
     batchCopyLicenses,
+    batchExportLicenses,
     handlePageChange,
     handlePageSizeChange,
     rowSelection,
@@ -349,11 +414,31 @@ const useClientLicensesData = () => {
   };
 };
 
-const ClientLicensesDescription = ({ compactMode, setCompactMode, t }) => (
+const ClientLicensesDescription = ({
+  compactMode,
+  setCompactMode,
+  t,
+  total,
+  activatedCount,
+  enabledCount,
+}) => (
   <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full'>
-    <div className='flex items-center text-violet-500'>
-      <KeyRound size={16} className='mr-2' />
-      <Typography.Text>{t('客户端卡密管理')}</Typography.Text>
+    <div className='flex flex-col gap-2'>
+      <div className='flex items-center text-violet-500'>
+        <KeyRound size={16} className='mr-2' />
+        <Typography.Text>{t('客户端卡密管理')}</Typography.Text>
+      </div>
+      <div className='flex flex-wrap gap-2'>
+        <Tag color='blue' shape='circle'>
+          {t('总数')} {total}
+        </Tag>
+        <Tag color='cyan' shape='circle'>
+          {t('已激活')} {activatedCount}
+        </Tag>
+        <Tag color='green' shape='circle'>
+          {t('可用中')} {enabledCount}
+        </Tag>
+      </div>
     </div>
     <CompactModeToggle compactMode={compactMode} setCompactMode={setCompactMode} t={t} />
   </div>
@@ -429,6 +514,7 @@ const ClientLicensesActions = ({
   setEditingLicense,
   setShowEdit,
   batchCopyLicenses,
+  batchExportLicenses,
   t,
 }) => {
   const handleAdd = () => {
@@ -447,7 +533,16 @@ const ClientLicensesActions = ({
         onClick={batchCopyLicenses}
         size='small'
       >
-        {t('复制所选卡密')}
+        {t('批量复制')}
+      </Button>
+      <Button
+        type='secondary'
+        className='flex-1 md:flex-initial'
+        onClick={batchExportLicenses}
+        size='small'
+        icon={<IconDownload />}
+      >
+        {t('批量导出')}
       </Button>
     </div>
   );
@@ -639,7 +734,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <div>
                     <Typography.Text strong>{t('卡密信息')}</Typography.Text>
                     <div className='text-xs text-gray-600'>
-                      {t('设置 AI Deployer 客户端可兑换的卡密')}
+                      {t('配置卡密编码、批量生成规则与固定过期时间')}
                     </div>
                   </div>
                 </div>
@@ -729,7 +824,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <div>
                     <Typography.Text strong>{t('额度配置')}</Typography.Text>
                     <div className='text-xs text-gray-600'>
-                      {t('控制兑换后创建的 new-api token 可用额度')}
+                      {t('控制卡密激活后生成的令牌额度与有效策略')}
                     </div>
                   </div>
                 </div>
@@ -763,7 +858,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <div>
                     <Typography.Text strong>{t('设备绑定')}</Typography.Text>
                     <div className='text-xs text-gray-600'>
-                      {t('可选：手动写入或清空设备哈希，用于重绑设备')}
+                      {t('可选：手动维护设备哈希，用于锁定或释放指定设备')}
                     </div>
                   </div>
                 </div>
@@ -825,7 +920,19 @@ const ClientLicensesTable = ({
         render: (text, record) => text || record.code,
       },
       {
-        title: t('状态'),
+        title: t('激活状态'),
+        dataIndex: 'activated_time',
+        render: (text, record) => {
+          const config = activationTag(record, t);
+          return (
+            <Tag color={config.color} shape='circle'>
+              {config.text}
+            </Tag>
+          );
+        },
+      },
+      {
+        title: t('卡密状态'),
         dataIndex: 'status',
         render: (text, record) => {
           const config = statusTag(record, t);
@@ -851,7 +958,7 @@ const ClientLicensesTable = ({
           ),
       },
       {
-        title: t('设备绑定'),
+        title: t('绑定设备'),
         dataIndex: 'device_hash',
         render: (text) => (
           <Popover content={text || t('未绑定')} position='top'>
@@ -860,12 +967,12 @@ const ClientLicensesTable = ({
         ),
       },
       {
-        title: t('Token ID'),
+        title: t('关联令牌'),
         dataIndex: 'token_id',
         render: (text) => text || '-',
       },
       {
-        title: t('用户 ID'),
+        title: t('归属用户'),
         dataIndex: 'user_id',
         render: (text) => text || '-',
       },
@@ -885,12 +992,12 @@ const ClientLicensesTable = ({
         render: (text) => formatTime(text, t),
       },
       {
-        title: t('持续天数'),
+        title: t('时长(天)'),
         dataIndex: 'duration_days',
         render: (text) => (text && text > 0 ? `${text}d` : '-'),
       },
       {
-        title: t('过期时间'),
+        title: t('实际到期'),
         dataIndex: 'expired_time',
         render: (text, record) => formatExpires(record, t),
       },
@@ -1002,6 +1109,17 @@ const ClientLicensesTable = ({
 const ClientLicensesPage = () => {
   const data = useClientLicensesData();
   const isMobile = useIsMobile();
+  const activatedCount = useMemo(
+    () => data.licenses.filter((item) => isActivated(item)).length,
+    [data.licenses],
+  );
+  const enabledCount = useMemo(
+    () =>
+      data.licenses.filter(
+        (item) => item.status === CLIENT_LICENSE_STATUS.ACTIVE && !isExpired(item),
+      ).length,
+    [data.licenses],
+  );
 
   return (
     <>
@@ -1031,6 +1149,9 @@ const ClientLicensesPage = () => {
             compactMode={data.compactMode}
             setCompactMode={data.setCompactMode}
             t={data.t}
+            total={data.total}
+            activatedCount={activatedCount}
+            enabledCount={enabledCount}
           />
         }
         actionsArea={
@@ -1039,6 +1160,7 @@ const ClientLicensesPage = () => {
               setEditingLicense={data.setEditingLicense}
               setShowEdit={data.setShowEdit}
               batchCopyLicenses={data.batchCopyLicenses}
+              batchExportLicenses={data.batchExportLicenses}
               t={data.t}
             />
             <div className='w-full md:w-full lg:w-auto order-1 md:order-2'>
