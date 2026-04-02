@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import {
   API,
   copy,
+  downloadTextAsFile,
   renderQuota,
   renderQuotaWithPrompt,
   showError,
@@ -75,19 +76,36 @@ const CLIENT_LICENSE_ACTIONS = {
   DISABLE: 'disable',
 };
 
-const generateClientLicenseCode = () => {
+const generateClientLicenseCode = (length = 8) => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const normalizedLength = Math.max(4, Math.min(32, Number(length) || 8));
   const buildPart = () =>
     Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  return `CDX-${buildPart()}-${buildPart()}`;
+  let raw = Array.from({ length: normalizedLength }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  const parts = [];
+  while (raw.length > 4) {
+    parts.push(raw.slice(0, 4));
+    raw = raw.slice(4);
+  }
+  if (raw) parts.push(raw);
+  return `CDX-${parts.join('-')}`;
 };
 
 const currentUnix = () => Math.floor(Date.now() / 1000);
 
+const getEffectiveExpiredTime = (record) => {
+  if (!record) return 0;
+  if (record.expired_time > 0) return record.expired_time;
+  if (record.duration_days > 0 && record.activated_time > 0) {
+    return record.activated_time + record.duration_days * 86400;
+  }
+  return 0;
+};
+
 const isExpired = (record) =>
   record?.status === CLIENT_LICENSE_STATUS.ACTIVE &&
-  record?.expired_time > 0 &&
-  record.expired_time < currentUnix();
+  getEffectiveExpiredTime(record) > 0 &&
+  getEffectiveExpiredTime(record) < currentUnix();
 
 const statusTag = (record, t) => {
   if (isExpired(record)) {
@@ -109,6 +127,17 @@ const maskText = (text) => {
 const formatTime = (value, t, emptyText = '未设置') => {
   if (!value || value === 0) return t(emptyText);
   return timestamp2string(value);
+};
+
+const formatExpires = (record, t) => {
+  const effectiveExpiredTime = getEffectiveExpiredTime(record);
+  if (effectiveExpiredTime > 0) {
+    return timestamp2string(effectiveExpiredTime);
+  }
+  if (record?.duration_days > 0) {
+    return t('激活后 {{count}} 天', { count: record.duration_days });
+  }
+  return t('永不过期');
 };
 
 const useClientLicensesData = () => {
@@ -465,11 +494,14 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
   const formApiRef = useRef(null);
 
   const getInitValues = () => ({
-    code: generateClientLicenseCode(),
+    code: '',
     name: '',
     unlimited_quota: true,
     quota: 0,
     device_hash: '',
+    batch_count: 1,
+    code_length: 8,
+    duration_days: 0,
     expired_time: null,
   });
 
@@ -503,8 +535,15 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
     setLoading(true);
     const payload = {
       ...values,
+      code:
+        !isEdit && (parseInt(values.batch_count, 10) || 1) > 1
+          ? ''
+          : (values.code || '').trim(),
       name: (values.name || values.code || '').trim(),
       quota: parseInt(values.quota, 10) || 0,
+      batch_count: parseInt(values.batch_count, 10) || 1,
+      code_length: parseInt(values.code_length, 10) || 8,
+      duration_days: parseInt(values.duration_days, 10) || 0,
       expired_time: values.expired_time
         ? Math.floor(values.expired_time.getTime() / 1000)
         : 0,
@@ -521,9 +560,26 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
 
     const { success, message } = res.data;
     if (success) {
+      const generatedCodes = res.data?.data?.codes || [];
       showSuccess(isEdit ? t('客户端卡密更新成功！') : t('客户端卡密创建成功！'));
       await refresh();
       onClose();
+
+      if (!isEdit && generatedCodes.length > 0) {
+        const text = generatedCodes.join('\n');
+        Modal.confirm({
+          title: t('客户端卡密创建成功'),
+          content: (
+            <div>
+              <p>{t('本次共生成 {{count}} 个卡密。', { count: generatedCodes.length })}</p>
+              <p>{t('是否下载卡密列表文件？')}</p>
+            </div>
+          ),
+          onOk: () => {
+            downloadTextAsFile(text, `${payload.name || 'client-licenses'}.txt`);
+          },
+        });
+      }
     } else {
       showError(message);
     }
@@ -592,14 +648,19 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                     <Form.Input
                       field='code'
                       label={t('卡密')}
-                      placeholder='CDX-XXXX-XXXX'
-                      rules={[{ required: true, message: t('请输入卡密') }]}
+                      placeholder={t('留空则自动生成；批量创建时必须留空')}
                       showClear
                       extraText={
                         <Button
                           type='tertiary'
                           size='small'
-                          onClick={() => formApiRef.current?.setValue('code', generateClientLicenseCode())}
+                          disabled={isEdit ? false : (Number(values.batch_count) || 1) > 1}
+                          onClick={() =>
+                            formApiRef.current?.setValue(
+                              'code',
+                              generateClientLicenseCode(values.code_length),
+                            )
+                          }
                         >
                           {t('生成')}
                         </Button>
@@ -619,9 +680,42 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                       field='expired_time'
                       label={t('过期时间')}
                       type='dateTime'
-                      placeholder={t('留空表示永不过期')}
+                      placeholder={t('留空表示永不过期；如设置持续天数请留空')}
+                      disabled={(Number(values.duration_days) || 0) > 0}
                       style={{ width: '100%' }}
                       showClear
+                    />
+                  </Col>
+                  {!isEdit && (
+                    <>
+                      <Col span={12}>
+                        <Form.InputNumber
+                          field='batch_count'
+                          label={t('生成数量')}
+                          min={1}
+                          max={200}
+                          style={{ width: '100%' }}
+                        />
+                      </Col>
+                      <Col span={12}>
+                        <Form.InputNumber
+                          field='code_length'
+                          label={t('随机长度')}
+                          min={4}
+                          max={32}
+                          style={{ width: '100%' }}
+                          extraText={t('仅对自动生成卡密生效')}
+                        />
+                      </Col>
+                    </>
+                  )}
+                  <Col span={24}>
+                    <Form.InputNumber
+                      field='duration_days'
+                      label={t('持续天数')}
+                      min={0}
+                      style={{ width: '100%' }}
+                      extraText={t('填 0 表示不用持续天数；大于 0 时从首次激活开始计时')}
                     />
                   </Col>
                 </Row>
@@ -781,14 +875,24 @@ const ClientLicensesTable = ({
         render: (text) => formatTime(text, t),
       },
       {
+        title: t('激活时间'),
+        dataIndex: 'activated_time',
+        render: (text) => formatTime(text, t),
+      },
+      {
         title: t('最近兑换'),
         dataIndex: 'last_redeem_time',
         render: (text) => formatTime(text, t),
       },
       {
+        title: t('持续天数'),
+        dataIndex: 'duration_days',
+        render: (text) => (text && text > 0 ? `${text}d` : '-'),
+      },
+      {
         title: t('过期时间'),
         dataIndex: 'expired_time',
-        render: (text) => formatTime(text, t, '永不过期'),
+        render: (text, record) => formatExpires(record, t),
       },
       {
         title: '',

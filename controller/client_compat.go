@@ -282,17 +282,22 @@ func ensureSeedClientLicense() error {
 		Status:         model.ClientLicenseStatusActive,
 		UnlimitedQuota: common.GetEnvOrDefaultBool("AI_DEPLOYER_CLIENT_SEED_UNLIMITED", true),
 		Quota:          common.GetEnvOrDefault("AI_DEPLOYER_CLIENT_SEED_QUOTA", 0),
+		DurationDays:   common.GetEnvOrDefault("AI_DEPLOYER_CLIENT_SEED_DURATION_DAYS", 0),
 		ExpiredTime:    expiredTime,
 	}
 	return license.Insert()
 }
 
 func getOrCreateClientCompatToken(license *model.ClientLicense, deviceHash string) (*model.Token, error) {
+	now := common.GetTimestamp()
+	if license.ActivatedTime == 0 && license.DurationDays > 0 {
+		license.ActivatedTime = now
+	}
 	if license.TokenId > 0 {
 		token, err := model.GetTokenById(license.TokenId)
 		if err == nil {
 			license.DeviceHash = firstNonEmpty(license.DeviceHash, deviceHash)
-			license.LastRedeemTime = common.GetTimestamp()
+			license.LastRedeemTime = now
 			if updateErr := license.Update(); updateErr != nil {
 				return nil, updateErr
 			}
@@ -323,8 +328,8 @@ func getOrCreateClientCompatToken(license *model.ClientLicense, deviceHash strin
 		Name:               buildClientCompatTokenName(license),
 		Key:                key,
 		Status:             common.TokenStatusEnabled,
-		CreatedTime:        common.GetTimestamp(),
-		AccessedTime:       common.GetTimestamp(),
+		CreatedTime:        now,
+		AccessedTime:       now,
 		ExpiredTime:        expiredAt,
 		RemainQuota:        license.Quota,
 		UnlimitedQuota:     license.UnlimitedQuota,
@@ -338,7 +343,7 @@ func getOrCreateClientCompatToken(license *model.ClientLicense, deviceHash strin
 	license.UserId = user.Id
 	license.TokenId = token.Id
 	license.DeviceHash = firstNonEmpty(license.DeviceHash, deviceHash)
-	license.LastRedeemTime = common.GetTimestamp()
+	license.LastRedeemTime = now
 	if err := license.Update(); err != nil {
 		return nil, err
 	}
@@ -456,8 +461,9 @@ func syncClientLicenseToken(license *model.ClientLicense, token *model.Token) (*
 	now := common.GetTimestamp()
 	token.Name = buildClientCompatTokenName(license)
 	token.UnlimitedQuota = license.UnlimitedQuota
-	if license.ExpiredTime > 0 {
-		token.ExpiredTime = license.ExpiredTime
+	effectiveExpiredTime := license.EffectiveExpiredTime()
+	if effectiveExpiredTime > 0 {
+		token.ExpiredTime = effectiveExpiredTime
 	} else {
 		token.ExpiredTime = -1
 	}
@@ -491,8 +497,8 @@ func syncClientLicenseToken(license *model.ClientLicense, token *model.Token) (*
 
 func clientCompatExpiresAt(license *model.ClientLicense, token *model.Token) string {
 	expiredTime := int64(0)
-	if license != nil && license.ExpiredTime > 0 {
-		expiredTime = license.ExpiredTime
+	if license != nil {
+		expiredTime = license.EffectiveExpiredTime()
 	}
 	if expiredTime == 0 && token != nil && token.ExpiredTime > 0 {
 		expiredTime = token.ExpiredTime

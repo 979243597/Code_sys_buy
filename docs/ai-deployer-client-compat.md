@@ -57,6 +57,7 @@ Optional seeded demo card:
 - `AI_DEPLOYER_CLIENT_SEED_NAME=starter`
 - `AI_DEPLOYER_CLIENT_SEED_UNLIMITED=true`
 - `AI_DEPLOYER_CLIENT_SEED_QUOTA=0`
+- `AI_DEPLOYER_CLIENT_SEED_DURATION_DAYS=0`
 - `AI_DEPLOYER_CLIENT_SEED_EXPIRES_AT=2026-12-31T23:59:59Z`
 
 If `AI_DEPLOYER_CLIENT_SEED_CODE` is blank, automatic seed creation is disabled.
@@ -67,6 +68,8 @@ If `AI_DEPLOYER_CLIENT_SEED_CODE` is blank, automatic seed creation is disabled.
 - The desktop client writes that key into local Codex/OpenCode config.
 - For usage display, quota is converted with `common.QuotaPerUnit` so the client can render `$...` style values.
 - A disabled or expired client card will also mark its mapped token disabled/expired when the compatibility endpoints are hit.
+- If `duration_days > 0`, the validity window starts from the first successful activation, not from creation time.
+- The admin UI now supports batch creation, auto-generated codes, and custom random code length.
 
 ## Current Limitation
 
