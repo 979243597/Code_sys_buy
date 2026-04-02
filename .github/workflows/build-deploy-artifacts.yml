@@ -186,15 +186,12 @@ jobs:
           - ai-deployer-client-compat.md
           - load-image-and-start.sh
           - load-image-and-start.ps1
+          - install-from-artifacts.sh
 
           Usage on the server:
           1. Copy the image archive and this bundle to the same directory.
-          2. Load the image:
-             docker load -i new-api-artifact-*.tar.gz
-          3. Create runtime folders:
-             mkdir -p data logs
-          4. Start:
-             docker compose -f docker-compose.artifact.yml up -d
+          2. Run:
+             bash install-from-artifacts.sh
 
           Notes:
           - Update database passwords before production use.
@@ -224,6 +221,8 @@ jobs:
 
           cp ".env.example" "${BUNDLE_DIR}/deploy.env.example"
           cp "docs/ai-deployer-client-compat.md" "${BUNDLE_DIR}/ai-deployer-client-compat.md"
+          cp "scripts/install-from-artifacts.sh" "${BUNDLE_DIR}/install-from-artifacts.sh"
+          chmod +x "${BUNDLE_DIR}/install-from-artifacts.sh"
 
       - name: Generate checksums
         shell: bash
