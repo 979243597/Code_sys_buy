@@ -23,12 +23,11 @@ import {
   API,
   copy,
   downloadTextAsFile,
-  renderQuota,
-  renderQuotaWithPrompt,
   showError,
   showSuccess,
   timestamp2string,
 } from '../../../helpers';
+import { getQuotaPerUnit } from '../../../helpers/quota';
 import { ITEMS_PER_PAGE } from '../../../constants';
 import { useTableCompactMode } from '../../../hooks/common/useTableCompactMode';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
@@ -95,6 +94,33 @@ const generateClientLicenseCode = (length = 8) => {
 };
 
 const currentUnix = () => Math.floor(Date.now() / 1000);
+
+const quotaToUsdAmount = (quota) => {
+  const numericQuota = Number(quota || 0);
+  const quotaPerUnit = getQuotaPerUnit();
+  if (!Number.isFinite(numericQuota) || numericQuota <= 0 || !quotaPerUnit) return 0;
+  return Number((numericQuota / quotaPerUnit).toFixed(2));
+};
+
+const usdAmountToQuota = (amount) => {
+  const numericAmount = Number(amount || 0);
+  const quotaPerUnit = getQuotaPerUnit();
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0 || !quotaPerUnit) return 0;
+  return Math.round(numericAmount * quotaPerUnit);
+};
+
+const formatUsdQuota = (quota, digits = 2) => {
+  const numericQuota = Number(quota || 0);
+  const quotaPerUnit = getQuotaPerUnit();
+  if (!Number.isFinite(numericQuota) || numericQuota <= 0 || !quotaPerUnit) return '$0.00';
+  const resultUsd = numericQuota / quotaPerUnit;
+  const fixedResult = resultUsd.toFixed(digits);
+  if (parseFloat(fixedResult) === 0 && resultUsd > 0) {
+    const minValue = Math.pow(10, -digits);
+    return `$${minValue.toFixed(digits)}`;
+  }
+  return `$${fixedResult}`;
+};
 
 const getEffectiveExpiredTime = (record) => {
   if (!record) return 0;
@@ -315,7 +341,8 @@ const useClientLicensesData = () => {
       'activation_status',
       'card_status',
       'unlimited_quota',
-      'quota',
+      'quota_usd',
+      'quota_raw',
       'duration_days',
       'created_time',
       'activated_time',
@@ -333,6 +360,7 @@ const useClientLicensesData = () => {
         isActivated(item) ? 'activated' : 'pending',
         item.status || '',
         item.unlimited_quota ? 'true' : 'false',
+        item.unlimited_quota ? 'unlimited' : quotaToUsdAmount(item.quota ?? 0).toFixed(2),
         item.quota ?? 0,
         item.duration_days ?? 0,
         item.created_time ?? 0,
@@ -610,6 +638,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
       formApiRef.current?.setValues({
         ...getInitValues(),
         ...data,
+        quota: quotaToUsdAmount(data.quota || 0),
         expired_time: data.expired_time === 0 ? null : new Date(data.expired_time * 1000),
       });
     } else {
@@ -637,7 +666,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
           ? ''
           : (values.code || '').trim(),
       name: (values.name || values.code || '').trim(),
-      quota: parseInt(values.quota, 10) || 0,
+      quota: usdAmountToQuota(values.quota),
       batch_count: parseInt(values.batch_count, 10) || 1,
       code_length: parseInt(values.code_length, 10) || 8,
       duration_days: parseInt(values.duration_days, 10) || 0,
@@ -842,11 +871,14 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <Col span={24}>
                     <Form.InputNumber
                       field='quota'
-                      label={t('额度')}
+                      label={t('额度（USD）')}
                       min={0}
+                      precision={2}
                       disabled={values.unlimited_quota}
                       style={{ width: '100%' }}
-                      extraText={renderQuotaWithPrompt(Number(values.quota) || 0)}
+                      extraText={`${t('按美元填写，保存时自动换算为原生额度')} · ${t('原生额度')}：${usdAmountToQuota(
+                        values.quota,
+                      )}`}
                     />
                   </Col>
                 </Row>
@@ -946,7 +978,7 @@ const ClientLicensesTable = ({
         },
       },
       {
-        title: t('额度'),
+        title: t('额度（USD）'),
         dataIndex: 'quota',
         render: (text, record) =>
           record.unlimited_quota ? (
@@ -955,7 +987,7 @@ const ClientLicensesTable = ({
             </Tag>
           ) : (
             <Tag color='grey' shape='circle'>
-              {renderQuota(parseInt(text, 10) || 0)}
+              {formatUsdQuota(parseInt(text, 10) || 0)}
             </Tag>
           ),
       },
