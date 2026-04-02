@@ -47,6 +47,11 @@ unzip -o "$IMAGE_ZIP" -d "$ROOT_DIR" >/dev/null
 unzip -o "$BUNDLE_ZIP" -d "$ROOT_DIR" >/dev/null
 unzip -o "$CHECKSUMS_ZIP" -d "$ROOT_DIR" >/dev/null
 
+INNER_BUNDLE_ZIP="$(find "$ROOT_DIR" -maxdepth 1 -type f -name 'new-api-*-deploy-bundle.zip' | head -n 1)"
+if [[ -n "$INNER_BUNDLE_ZIP" ]]; then
+  unzip -o "$INNER_BUNDLE_ZIP" -d "$ROOT_DIR" >/dev/null
+fi
+
 IMAGE_ARCHIVE="$(find "$ROOT_DIR" -maxdepth 1 -type f -name 'new-api-artifact-*.tar.gz' | head -n 1)"
 CHECKSUM_FILE="$(find "$ROOT_DIR" -maxdepth 1 -type f -name 'SHA256SUMS.txt' | head -n 1)"
 BUNDLE_DIR="$(find "$ROOT_DIR" -maxdepth 1 -mindepth 1 \( -type d -name 'new-api-*-amd64' -o -type d -name 'new-api-*-arm64' \) | head -n 1)"
