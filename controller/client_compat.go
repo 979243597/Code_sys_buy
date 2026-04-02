@@ -244,15 +244,49 @@ func QueryClientCompatUsage(c *gin.Context) {
 
 func loadClientCompatConfig() clientCompatConfig {
 	return clientCompatConfig{
-		Enabled:           common.GetEnvOrDefaultBool("AI_DEPLOYER_CLIENT_ENABLED", true),
-		Notice:            strings.TrimSpace(common.GetEnvOrDefaultString("AI_DEPLOYER_CLIENT_NOTICE", "")),
-		MinVersion:        common.GetEnvOrDefaultString("AI_DEPLOYER_CLIENT_MIN_VERSION", "1.0.0"),
-		LatestVersion:     common.GetEnvOrDefaultString("AI_DEPLOYER_CLIENT_LATEST_VERSION", "1.0.4"),
-		UpdateURL:         strings.TrimSpace(common.GetEnvOrDefaultString("AI_DEPLOYER_CLIENT_UPDATE_URL", "")),
-		DefaultModel:      common.GetEnvOrDefaultString("AI_DEPLOYER_CLIENT_DEFAULT_MODEL", "gpt-5.3-codex"),
-		DefaultOCModel:    common.GetEnvOrDefaultString("AI_DEPLOYER_CLIENT_DEFAULT_OC_MODEL", "openai/gpt-5.3-codex"),
-		DefaultSmallModel: common.GetEnvOrDefaultString("AI_DEPLOYER_CLIENT_DEFAULT_SMALL_MODEL", "openai/gpt-4.1-mini"),
+		Enabled:           getClientCompatOptionBool("AIDeployerClientEnabled", "AI_DEPLOYER_CLIENT_ENABLED", true),
+		Notice:            strings.TrimSpace(getClientCompatOptionString("AIDeployerClientNotice", "AI_DEPLOYER_CLIENT_NOTICE", "")),
+		MinVersion:        getClientCompatOptionString("AIDeployerClientMinVersion", "AI_DEPLOYER_CLIENT_MIN_VERSION", "1.0.0"),
+		LatestVersion:     getClientCompatOptionString("AIDeployerClientLatestVersion", "AI_DEPLOYER_CLIENT_LATEST_VERSION", "1.0.4"),
+		UpdateURL:         strings.TrimSpace(getClientCompatOptionString("AIDeployerClientUpdateURL", "AI_DEPLOYER_CLIENT_UPDATE_URL", "")),
+		DefaultModel:      getClientCompatOptionString("AIDeployerClientDefaultModel", "AI_DEPLOYER_CLIENT_DEFAULT_MODEL", "gpt-5.3-codex"),
+		DefaultOCModel:    getClientCompatOptionString("AIDeployerClientDefaultOCModel", "AI_DEPLOYER_CLIENT_DEFAULT_OC_MODEL", "openai/gpt-5.3-codex"),
+		DefaultSmallModel: getClientCompatOptionString("AIDeployerClientDefaultSmallModel", "AI_DEPLOYER_CLIENT_DEFAULT_SMALL_MODEL", "openai/gpt-4.1-mini"),
 	}
+}
+
+func getClientCompatOptionString(optionKey, envKey, fallback string) string {
+	common.OptionMapRWMutex.RLock()
+	if value, ok := common.OptionMap[optionKey]; ok {
+		common.OptionMapRWMutex.RUnlock()
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
+		}
+		if fallback == "" {
+			return ""
+		}
+		return common.GetEnvOrDefaultString(envKey, fallback)
+	}
+	common.OptionMapRWMutex.RUnlock()
+	return common.GetEnvOrDefaultString(envKey, fallback)
+}
+
+func getClientCompatOptionBool(optionKey, envKey string, fallback bool) bool {
+	common.OptionMapRWMutex.RLock()
+	if value, ok := common.OptionMap[optionKey]; ok {
+		common.OptionMapRWMutex.RUnlock()
+		trimmed := strings.TrimSpace(strings.ToLower(value))
+		switch trimmed {
+		case "true", "1", "yes", "on":
+			return true
+		case "false", "0", "no", "off":
+			return false
+		}
+		return common.GetEnvOrDefaultBool(envKey, fallback)
+	}
+	common.OptionMapRWMutex.RUnlock()
+	return common.GetEnvOrDefaultBool(envKey, fallback)
 }
 
 func ensureSeedClientLicense() error {

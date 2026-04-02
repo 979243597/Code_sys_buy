@@ -78,6 +78,17 @@ const CLIENT_LICENSE_ACTIONS = {
   DISABLE: 'disable',
 };
 
+const CLIENT_COMPAT_OPTION_FIELDS = [
+  'AIDeployerClientEnabled',
+  'AIDeployerClientNotice',
+  'AIDeployerClientMinVersion',
+  'AIDeployerClientLatestVersion',
+  'AIDeployerClientUpdateURL',
+  'AIDeployerClientDefaultModel',
+  'AIDeployerClientDefaultOCModel',
+  'AIDeployerClientDefaultSmallModel',
+];
+
 const generateClientLicenseCode = (length = 8) => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const normalizedLength = Math.max(4, Math.min(32, Number(length) || 8));
@@ -473,6 +484,192 @@ const ClientLicensesDescription = ({
     <CompactModeToggle compactMode={compactMode} setCompactMode={setCompactMode} t={t} />
   </div>
 );
+
+const ClientCompatSettingsCard = ({ t }) => {
+  const formApiRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [snapshot, setSnapshot] = useState({});
+
+  const getInitValues = () => ({
+    AIDeployerClientEnabled: true,
+    AIDeployerClientNotice: '',
+    AIDeployerClientMinVersion: '1.0.0',
+    AIDeployerClientLatestVersion: '1.0.4',
+    AIDeployerClientUpdateURL: '',
+    AIDeployerClientDefaultModel: 'gpt-5.3-codex',
+    AIDeployerClientDefaultOCModel: 'openai/gpt-5.3-codex',
+    AIDeployerClientDefaultSmallModel: 'openai/gpt-4.1-mini',
+  });
+
+  const loadSettings = async () => {
+    setLoading(true);
+    try {
+      const res = await API.get('/api/option/');
+      const { success, message, data } = res.data;
+      if (!success) {
+        showError(message || t('加载失败，请重试'));
+        return;
+      }
+      const optionMap = (data || []).reduce((acc, item) => {
+        acc[item.key] = item.value;
+        return acc;
+      }, {});
+      const nextValues = {
+        ...getInitValues(),
+        AIDeployerClientEnabled:
+          String(optionMap.AIDeployerClientEnabled ?? 'true') === 'true',
+        AIDeployerClientNotice: optionMap.AIDeployerClientNotice || '',
+        AIDeployerClientMinVersion:
+          optionMap.AIDeployerClientMinVersion || '1.0.0',
+        AIDeployerClientLatestVersion:
+          optionMap.AIDeployerClientLatestVersion || '1.0.4',
+        AIDeployerClientUpdateURL: optionMap.AIDeployerClientUpdateURL || '',
+        AIDeployerClientDefaultModel:
+          optionMap.AIDeployerClientDefaultModel || 'gpt-5.3-codex',
+        AIDeployerClientDefaultOCModel:
+          optionMap.AIDeployerClientDefaultOCModel || 'openai/gpt-5.3-codex',
+        AIDeployerClientDefaultSmallModel:
+          optionMap.AIDeployerClientDefaultSmallModel || 'openai/gpt-4.1-mini',
+      };
+      setSnapshot(nextValues);
+      formApiRef.current?.setValues(nextValues);
+    } catch (error) {
+      showError(error.message || t('加载失败，请重试'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const saveSettings = async () => {
+    const values = formApiRef.current?.getValues() || {};
+    const updates = CLIENT_COMPAT_OPTION_FIELDS.filter(
+      (key) => values[key] !== snapshot[key],
+    ).map((key) => ({
+      key,
+      value: typeof values[key] === 'boolean' ? String(values[key]) : values[key] || '',
+    }));
+
+    if (updates.length === 0) {
+      showError(t('你似乎并没有修改什么'));
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const results = await Promise.all(
+        updates.map((item) => API.put('/api/option/', item)),
+      );
+      const failed = results.find((item) => !item?.data?.success);
+      if (failed) {
+        throw new Error(failed?.data?.message || t('保存失败，请重试'));
+      }
+      showSuccess(t('客户端远端配置已保存'));
+      await loadSettings();
+    } catch (error) {
+      showError(error.message || t('保存失败，请重试'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
+      <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4'>
+        <div>
+          <Typography.Text strong>{t('客户端远端配置')}</Typography.Text>
+          <div className='text-xs text-gray-600 mt-1'>
+            {t('控制 AI Deployer 客户端启动时的停用提示、版本检查、更新地址与默认模型')}
+          </div>
+        </div>
+        <Button theme='solid' onClick={saveSettings} loading={saving} icon={<IconSave />}>
+          {t('保存配置')}
+        </Button>
+      </div>
+
+      <Spin spinning={loading}>
+        <Form
+          initValues={getInitValues()}
+          getFormApi={(api) => {
+            formApiRef.current = api;
+          }}
+        >
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Switch
+                field='AIDeployerClientEnabled'
+                label={t('启用客户端服务')}
+                checkedText={t('开')}
+                uncheckedText={t('关')}
+              />
+            </Col>
+            <Col span={12}>
+              <Form.Input
+                field='AIDeployerClientMinVersion'
+                label={t('最低版本')}
+                placeholder='1.0.5'
+                showClear
+              />
+            </Col>
+            <Col span={12}>
+              <Form.Input
+                field='AIDeployerClientLatestVersion'
+                label={t('最新版本')}
+                placeholder='1.0.6'
+                showClear
+              />
+            </Col>
+            <Col span={24}>
+              <Form.Input
+                field='AIDeployerClientUpdateURL'
+                label={t('更新地址')}
+                placeholder='https://your-domain.example/downloads/ai-deployer'
+                showClear
+              />
+            </Col>
+            <Col span={24}>
+              <Form.TextArea
+                field='AIDeployerClientNotice'
+                label={t('提示文案')}
+                autosize={{ minRows: 3, maxRows: 6 }}
+                placeholder={t('例如：当前版本过旧，请升级后继续使用')}
+                showClear
+              />
+            </Col>
+            <Col span={24} md={12}>
+              <Form.Input
+                field='AIDeployerClientDefaultModel'
+                label={t('默认 Codex 模型')}
+                placeholder='gpt-5.3-codex'
+                showClear
+              />
+            </Col>
+            <Col span={24} md={12}>
+              <Form.Input
+                field='AIDeployerClientDefaultOCModel'
+                label={t('默认 OpenCode 模型')}
+                placeholder='openai/gpt-5.3-codex'
+                showClear
+              />
+            </Col>
+            <Col span={24}>
+              <Form.Input
+                field='AIDeployerClientDefaultSmallModel'
+                label={t('默认小模型')}
+                placeholder='openai/gpt-4.1-mini'
+                showClear
+              />
+            </Col>
+          </Row>
+        </Form>
+      </Spin>
+    </Card>
+  );
+};
 
 const ClientLicensesFilters = ({
   formInitValues,
@@ -1220,6 +1417,7 @@ const ClientLicensesPage = () => {
         })}
         t={data.t}
       >
+        <ClientCompatSettingsCard t={data.t} />
         <ClientLicensesTable {...data} />
       </CardPro>
     </>
