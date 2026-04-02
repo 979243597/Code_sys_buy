@@ -537,11 +537,11 @@ const ClientLicensesActions = ({
       >
         {t('批量复制')}
       </Button>
-              <Button
-                type='tertiary'
-                className='flex-1 md:flex-initial'
-                onClick={batchExportLicenses}
-                size='small'
+      <Button
+        type='tertiary'
+        className='flex-1 md:flex-initial'
+        onClick={batchExportLicenses}
+        size='small'
         icon={<IconDownload />}
       >
         {t('批量导出')}
