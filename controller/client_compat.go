@@ -285,6 +285,22 @@ func ensureSeedClientLicense() error {
 		DurationDays:   common.GetEnvOrDefault("AI_DEPLOYER_CLIENT_SEED_DURATION_DAYS", 0),
 		ExpiredTime:    expiredTime,
 	}
+
+	if existing, err := model.GetClientLicenseByCodeUnscoped(code); err == nil {
+		updates := map[string]any{
+			"name":            license.Name,
+			"status":          model.ClientLicenseStatusActive,
+			"unlimited_quota": license.UnlimitedQuota,
+			"quota":           license.Quota,
+			"duration_days":   license.DurationDays,
+			"expired_time":    license.ExpiredTime,
+			"deleted_at":      nil,
+		}
+		return model.DB.Unscoped().Model(existing).Updates(updates).Error
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
 	return license.Insert()
 }
 

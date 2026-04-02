@@ -140,3 +140,13 @@ func GetClientLicenseByCode(code string) (*ClientLicense, error) {
 	err := DB.Where("code = ?", normalized).First(license).Error
 	return license, err
 }
+
+func GetClientLicenseByCodeUnscoped(code string) (*ClientLicense, error) {
+	normalized := NormalizeClientLicenseCode(code)
+	if normalized == "" {
+		return nil, gorm.ErrRecordNotFound
+	}
+	license := &ClientLicense{}
+	err := DB.Unscoped().Where("code = ?", normalized).First(license).Error
+	return license, err
+}
