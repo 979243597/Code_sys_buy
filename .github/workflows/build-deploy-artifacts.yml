@@ -1,0 +1,255 @@
+name: Build Deploy Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Optional version label (defaults to snapshot-<date>-<sha>)"
+        required: false
+        default: ""
+      platform:
+        description: "Docker target platform"
+        required: true
+        type: choice
+        default: "linux/amd64"
+        options:
+          - "linux/amd64"
+          - "linux/arm64"
+
+jobs:
+  build_artifacts:
+    name: Build downloadable deploy artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      IMAGE_NAME: new-api-artifact
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 1
+
+      - name: Resolve build metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          INPUT_VERSION="${{ github.event.inputs.version }}"
+          TARGET_PLATFORM="${{ github.event.inputs.platform }}"
+          SHORT_SHA="$(git rev-parse --short HEAD)"
+          BUILD_DATE="$(date +'%Y%m%d')"
+
+          if [ -n "$INPUT_VERSION" ]; then
+            BUILD_VERSION="$INPUT_VERSION"
+          else
+            BUILD_VERSION="snapshot-${BUILD_DATE}-${SHORT_SHA}"
+          fi
+
+          ARCH_SLUG="${TARGET_PLATFORM##*/}"
+          IMAGE_TAG="${IMAGE_NAME}:${BUILD_VERSION}"
+
+          echo "$BUILD_VERSION" > VERSION
+
+          echo "BUILD_VERSION=$BUILD_VERSION" >> "$GITHUB_ENV"
+          echo "TARGET_PLATFORM=$TARGET_PLATFORM" >> "$GITHUB_ENV"
+          echo "ARCH_SLUG=$ARCH_SLUG" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+
+          echo "Build version: $BUILD_VERSION"
+          echo "Target platform: $TARGET_PLATFORM"
+          echo "Image tag: $IMAGE_TAG"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e8 # v3
+
+      - name: Prepare artifact directories
+        shell: bash
+        run: |
+          mkdir -p "${GITHUB_WORKSPACE}/artifacts/image"
+          mkdir -p "${GITHUB_WORKSPACE}/artifacts/bundle"
+
+      - name: Build Docker image tar
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: ${{ env.TARGET_PLATFORM }}
+          tags: ${{ env.IMAGE_TAG }}
+          outputs: type=docker,dest=${{ github.workspace }}/artifacts/image/${{ env.IMAGE_NAME }}-${{ env.BUILD_VERSION }}-${{ env.ARCH_SLUG }}.tar
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
+
+      - name: Compress Docker image tar
+        shell: bash
+        run: |
+          set -euo pipefail
+          gzip -9 "${GITHUB_WORKSPACE}/artifacts/image/${IMAGE_NAME}-${BUILD_VERSION}-${ARCH_SLUG}.tar"
+
+      - name: Create deployment bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BUNDLE_DIR="${GITHUB_WORKSPACE}/artifacts/bundle/new-api-${BUILD_VERSION}-${ARCH_SLUG}"
+          mkdir -p "$BUNDLE_DIR"
+
+          cat > "${BUNDLE_DIR}/docker-compose.artifact.yml" <<EOF
+          services:
+            new-api:
+              image: ${IMAGE_TAG}
+              container_name: new-api
+              restart: always
+              command: --log-dir /app/logs
+              ports:
+                - "3000:3000"
+              volumes:
+                - ./data:/data
+                - ./logs:/app/logs
+              environment:
+                - SQL_DSN=postgresql://root:123456@postgres:5432/new-api
+                - REDIS_CONN_STRING=redis://redis
+                - TZ=Asia/Shanghai
+                - ERROR_LOG_ENABLED=true
+                - BATCH_UPDATE_ENABLED=true
+              depends_on:
+                - redis
+                - postgres
+              networks:
+                - new-api-network
+              healthcheck:
+                test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -o '\\"success\\":\\\\s*true' || exit 1"]
+                interval: 30s
+                timeout: 10s
+                retries: 3
+
+            redis:
+              image: redis:latest
+              container_name: redis
+              restart: always
+              networks:
+                - new-api-network
+
+            postgres:
+              image: postgres:15
+              container_name: postgres
+              restart: always
+              environment:
+                POSTGRES_USER: root
+                POSTGRES_PASSWORD: 123456
+                POSTGRES_DB: new-api
+              volumes:
+                - pg_data:/var/lib/postgresql/data
+              networks:
+                - new-api-network
+
+          volumes:
+            pg_data:
+
+          networks:
+            new-api-network:
+              driver: bridge
+          EOF
+
+          cat > "${BUNDLE_DIR}/README.deploy.txt" <<EOF
+          New API deploy artifact
+          ======================
+
+          Version: ${BUILD_VERSION}
+          Platform: ${TARGET_PLATFORM}
+          Image tag: ${IMAGE_TAG}
+
+          Files in this bundle:
+          - docker-compose.artifact.yml
+          - deploy.env.example
+          - ai-deployer-client-compat.md
+          - load-image-and-start.sh
+          - load-image-and-start.ps1
+
+          Usage on the server:
+          1. Copy the image archive and this bundle to the same directory.
+          2. Load the image:
+             docker load -i ${IMAGE_NAME}-${BUILD_VERSION}-${ARCH_SLUG}.tar.gz
+          3. Create runtime folders:
+             mkdir -p data logs
+          4. Start:
+             docker compose -f docker-compose.artifact.yml up -d
+
+          Notes:
+          - Update database passwords before production use.
+          - If you use the AI Deployer desktop client, also read ai-deployer-client-compat.md.
+          EOF
+
+          cat > "${BUNDLE_DIR}/load-image-and-start.sh" <<EOF
+          #!/usr/bin/env bash
+          set -euo pipefail
+          IMAGE_ARCHIVE="${IMAGE_NAME}-${BUILD_VERSION}-${ARCH_SLUG}.tar.gz"
+          docker load -i "$IMAGE_ARCHIVE"
+          mkdir -p data logs
+          docker compose -f docker-compose.artifact.yml up -d
+          EOF
+          chmod +x "${BUNDLE_DIR}/load-image-and-start.sh"
+
+          cat > "${BUNDLE_DIR}/load-image-and-start.ps1" <<EOF
+          \$ImageArchive = "${IMAGE_NAME}-${BUILD_VERSION}-${ARCH_SLUG}.tar.gz"
+          docker load -i \$ImageArchive
+          New-Item -ItemType Directory -Force -Path .\\data | Out-Null
+          New-Item -ItemType Directory -Force -Path .\\logs | Out-Null
+          docker compose -f .\\docker-compose.artifact.yml up -d
+          EOF
+
+          cp ".env.example" "${BUNDLE_DIR}/deploy.env.example"
+          cp "docs/ai-deployer-client-compat.md" "${BUNDLE_DIR}/ai-deployer-client-compat.md"
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${GITHUB_WORKSPACE}/artifacts"
+          sha256sum "image/${IMAGE_NAME}-${BUILD_VERSION}-${ARCH_SLUG}.tar.gz" > SHA256SUMS.txt
+          (cd bundle && zip -r "../new-api-${BUILD_VERSION}-${ARCH_SLUG}-deploy-bundle.zip" "new-api-${BUILD_VERSION}-${ARCH_SLUG}" >/dev/null)
+          sha256sum "new-api-${BUILD_VERSION}-${ARCH_SLUG}-deploy-bundle.zip" >> SHA256SUMS.txt
+
+      - name: Upload Docker image archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ env.BUILD_VERSION }}-${{ env.ARCH_SLUG }}
+          path: artifacts/image/${{ env.IMAGE_NAME }}-${{ env.BUILD_VERSION }}-${{ env.ARCH_SLUG }}.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload deployment bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-bundle-${{ env.BUILD_VERSION }}-${{ env.ARCH_SLUG }}
+          path: artifacts/new-api-${{ env.BUILD_VERSION }}-${{ env.ARCH_SLUG }}-deploy-bundle.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: checksums-${{ env.BUILD_VERSION }}-${{ env.ARCH_SLUG }}
+          path: artifacts/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Build summary
+        shell: bash
+        run: |
+          {
+            echo "## Deploy artifacts ready"
+            echo
+            echo "- Version: \`${BUILD_VERSION}\`"
+            echo "- Platform: \`${TARGET_PLATFORM}\`"
+            echo "- Image tag: \`${IMAGE_TAG}\`"
+            echo
+            echo "Artifacts:"
+            echo "- Docker image tar.gz"
+            echo "- Deployment bundle zip"
+            echo "- SHA256SUMS.txt"
+          } >> "$GITHUB_STEP_SUMMARY"
