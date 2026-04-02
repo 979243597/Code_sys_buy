@@ -94,6 +94,17 @@ var defaultModelRatio = map[string]float64{
 	"gpt-5":                            0.625,
 	"gpt-5-2025-08-07":                 0.625,
 	"gpt-5-chat-latest":                0.625,
+	"gpt-5-codex":                      0.625,
+	"gpt-5-codex-mini":                 0.75,
+	"gpt-5.1":                          0.625,
+	"gpt-5.1-codex":                    0.625,
+	"gpt-5.1-codex-mini":               0.125,
+	"gpt-5.1-codex-max":                0.625,
+	"gpt-5.2":                          0.875,
+	"gpt-5.2-codex":                    0.875,
+	"gpt-5.3-codex":                    0.875,
+	"gpt-5.4":                          1.25,
+	"gpt-5.4-mini":                     0.375,
 	"gpt-5-mini":                       0.125,
 	"gpt-5-mini-2025-08-07":            0.125,
 	"gpt-5-nano":                       0.025,
@@ -327,10 +338,11 @@ var modelRatioMap = types.NewRWMap[string, float64]()
 var completionRatioMap = types.NewRWMap[string, float64]()
 
 var defaultCompletionRatio = map[string]float64{
-	"gpt-4-gizmo-*":  2,
-	"gpt-4o-gizmo-*": 3,
-	"gpt-4-all":      2,
-	"gpt-image-1":    8,
+	"gpt-4-gizmo-*":    2,
+	"gpt-4o-gizmo-*":   3,
+	"gpt-4-all":        2,
+	"gpt-image-1":      8,
+	"gpt-5-codex-mini": 4,
 }
 
 // InitRatioSettings initializes all model related settings maps
@@ -509,6 +521,9 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 		}
 		// gpt-5 匹配
 		if strings.HasPrefix(name, "gpt-5") {
+			if strings.HasPrefix(name, "gpt-5-codex-mini") {
+				return 4, true
+			}
 			if strings.HasPrefix(name, "gpt-5.4") {
 				if strings.HasPrefix(name, "gpt-5.4-nano") {
 					return 6.25, true
