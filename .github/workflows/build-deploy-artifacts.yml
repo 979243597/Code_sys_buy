@@ -60,6 +60,23 @@ jobs:
           echo "Target platform: $TARGET_PLATFORM"
           echo "Image tag: $IMAGE_TAG"
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      - name: Frontend preflight build
+        working-directory: ./web
+        shell: bash
+        env:
+          CI: ""
+          DISABLE_ESLINT_PLUGIN: "true"
+          VITE_REACT_APP_VERSION: ${{ env.BUILD_VERSION }}
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile
+          bun run build
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
