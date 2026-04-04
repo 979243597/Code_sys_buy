@@ -111,7 +111,21 @@ func (license *ClientLicense) Insert() error {
 	if license.CreatedTime == 0 {
 		license.CreatedTime = common.GetTimestamp()
 	}
-	return DB.Create(license).Error
+	return DB.Select(
+		"code",
+		"name",
+		"status",
+		"user_id",
+		"token_id",
+		"device_hash",
+		"unlimited_quota",
+		"quota",
+		"created_time",
+		"activated_time",
+		"last_redeem_time",
+		"duration_days",
+		"expired_time",
+	).Create(license).Error
 }
 
 func (license *ClientLicense) Update() error {

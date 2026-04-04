@@ -863,6 +863,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
           ? ''
           : (values.code || '').trim(),
       name: (values.name || values.code || '').trim(),
+      unlimited_quota: Boolean(values.unlimited_quota),
       quota: usdAmountToQuota(values.quota),
       batch_count: parseInt(values.batch_count, 10) || 1,
       code_length: parseInt(values.code_length, 10) || 8,
