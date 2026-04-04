@@ -23,6 +23,8 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/status", controller.GetStatus)
 		apiRouter.GET("/uptime/status", controller.GetUptimeKumaStatus)
 		apiRouter.GET("/client_config", controller.GetClientCompatConfig)
+		apiRouter.GET("/client_config/admin", middleware.AdminAuth(), controller.GetClientCompatAdminConfig)
+		apiRouter.PUT("/client_config/admin", middleware.AdminAuth(), controller.UpdateClientCompatAdminConfig)
 		apiRouter.POST("/redeem", controller.RedeemClientCompatCard)
 		apiRouter.POST("/usage", controller.QueryClientCompatUsage)
 		apiRouter.GET("/models", middleware.UserAuth(), controller.DashboardListModels)

@@ -29,6 +29,17 @@ type clientCompatConfig struct {
 	DefaultSmallModel string `json:"default_small_model"`
 }
 
+type clientCompatConfigUpdateRequest struct {
+	Enabled           bool   `json:"enabled"`
+	Notice            string `json:"notice"`
+	MinVersion        string `json:"min_version"`
+	LatestVersion     string `json:"latest_version"`
+	UpdateURL         string `json:"update_url"`
+	DefaultModel      string `json:"default_model"`
+	DefaultOCModel    string `json:"default_oc_model"`
+	DefaultSmallModel string `json:"default_small_model"`
+}
+
 func GetClientCompatConfig(c *gin.Context) {
 	cfg := loadClientCompatConfig()
 	c.JSON(http.StatusOK, gin.H{
@@ -40,6 +51,53 @@ func GetClientCompatConfig(c *gin.Context) {
 		"default_model":       cfg.DefaultModel,
 		"default_oc_model":    cfg.DefaultOCModel,
 		"default_small_model": cfg.DefaultSmallModel,
+	})
+}
+
+func GetClientCompatAdminConfig(c *gin.Context) {
+	cfg := loadClientCompatConfig()
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    cfg,
+	})
+}
+
+func UpdateClientCompatAdminConfig(c *gin.Context) {
+	req := clientCompatConfigUpdateRequest{}
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "invalid request payload",
+		})
+		return
+	}
+
+	updates := map[string]string{
+		"AIDeployerClientEnabled":           boolToString(req.Enabled),
+		"AIDeployerClientNotice":            strings.TrimSpace(req.Notice),
+		"AIDeployerClientMinVersion":        strings.TrimSpace(req.MinVersion),
+		"AIDeployerClientLatestVersion":     strings.TrimSpace(req.LatestVersion),
+		"AIDeployerClientUpdateURL":         strings.TrimSpace(req.UpdateURL),
+		"AIDeployerClientDefaultModel":      strings.TrimSpace(req.DefaultModel),
+		"AIDeployerClientDefaultOCModel":    strings.TrimSpace(req.DefaultOCModel),
+		"AIDeployerClientDefaultSmallModel": strings.TrimSpace(req.DefaultSmallModel),
+	}
+
+	for key, value := range updates {
+		if err := model.UpdateOption(key, value); err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    loadClientCompatConfig(),
 	})
 }
 
