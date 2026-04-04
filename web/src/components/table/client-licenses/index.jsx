@@ -104,6 +104,18 @@ const generateClientLicenseCode = (length = 8) => {
   return `CDX-${parts.join('-')}`;
 };
 
+const normalizeBooleanValue = (value, fallback = false) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'off', ''].includes(normalized)) return false;
+  }
+  if (typeof value === 'number') return value !== 0;
+  if (value == null) return fallback;
+  return Boolean(value);
+};
+
 const currentUnix = () => Math.floor(Date.now() / 1000);
 
 const quotaToUsdAmount = (quota) => {
@@ -863,7 +875,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
           ? ''
           : (values.code || '').trim(),
       name: (values.name || values.code || '').trim(),
-      unlimited_quota: Boolean(values.unlimited_quota),
+      unlimited_quota: normalizeBooleanValue(values.unlimited_quota, true),
       quota: usdAmountToQuota(values.quota),
       batch_count: parseInt(values.batch_count, 10) || 1,
       code_length: parseInt(values.code_length, 10) || 8,
