@@ -111,21 +111,32 @@ func (license *ClientLicense) Insert() error {
 	if license.CreatedTime == 0 {
 		license.CreatedTime = common.GetTimestamp()
 	}
-	return DB.Select(
-		"code",
-		"name",
-		"status",
-		"user_id",
-		"token_id",
-		"device_hash",
-		"unlimited_quota",
-		"quota",
-		"created_time",
-		"activated_time",
-		"last_redeem_time",
-		"duration_days",
-		"expired_time",
-	).Create(license).Error
+	// Use an explicit value map so false/0 values are inserted as-is instead of
+	// being replaced by database defaults during create.
+	values := map[string]any{
+		"code":             license.Code,
+		"name":             license.Name,
+		"status":           license.Status,
+		"user_id":          license.UserId,
+		"token_id":         license.TokenId,
+		"device_hash":      license.DeviceHash,
+		"unlimited_quota":  license.UnlimitedQuota,
+		"quota":            license.Quota,
+		"created_time":     license.CreatedTime,
+		"activated_time":   license.ActivatedTime,
+		"last_redeem_time": license.LastRedeemTime,
+		"duration_days":    license.DurationDays,
+		"expired_time":     license.ExpiredTime,
+	}
+	if err := DB.Model(&ClientLicense{}).Create(values).Error; err != nil {
+		return err
+	}
+	created, err := GetClientLicenseByCode(license.Code)
+	if err != nil {
+		return err
+	}
+	*license = *created
+	return nil
 }
 
 func (license *ClientLicense) Update() error {
