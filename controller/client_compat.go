@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -176,6 +177,17 @@ func RedeemClientCompatCard(c *gin.Context) {
 		})
 		return
 	}
+	if license.SubscriptionPlanId > 0 && license.UserSubscriptionId > 0 {
+		if sub, err := model.GetUserSubscriptionById(license.UserSubscriptionId); err == nil && sub != nil {
+			if sub.Status != "active" || (sub.EndTime > 0 && sub.EndTime <= now) {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "card subscription is expired",
+				})
+				return
+			}
+		}
+	}
 
 	token, err := getOrCreateClientCompatToken(license, deviceHash)
 	if err != nil {
@@ -187,11 +199,33 @@ func RedeemClientCompatCard(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"success":    true,
 		"key":        token.Key,
 		"expires_at": clientCompatExpiresAt(license, token),
-	})
+	}
+	if license.SubscriptionPlanId > 0 {
+		response["quota_mode"] = "subscription"
+		response["subscription_plan_id"] = license.SubscriptionPlanId
+		if plan, err := model.GetSubscriptionPlanById(license.SubscriptionPlanId); err == nil && plan != nil {
+			response["subscription_plan_title"] = plan.Title
+			response["subscription_price_amount"] = plan.PriceAmount
+			response["subscription_duration_unit"] = plan.DurationUnit
+			response["subscription_duration_value"] = plan.DurationValue
+			response["subscription_custom_seconds"] = plan.CustomSeconds
+			response["subscription_reset_period"] = plan.QuotaResetPeriod
+			response["subscription_reset_custom_seconds"] = plan.QuotaResetCustomSeconds
+		}
+		if license.UserSubscriptionId > 0 {
+			if sub, err := model.GetUserSubscriptionById(license.UserSubscriptionId); err == nil && sub != nil {
+				response["subscription_status"] = sub.Status
+				response["subscription_next_reset_time"] = sub.NextResetTime
+			}
+		}
+	} else {
+		response["quota_mode"] = "quota"
+	}
+	c.JSON(http.StatusOK, response)
 }
 
 func QueryClientCompatUsage(c *gin.Context) {
@@ -254,6 +288,17 @@ func QueryClientCompatUsage(c *gin.Context) {
 
 	now := common.GetTimestamp()
 	status := license.ClientStatus(now)
+	if license.SubscriptionPlanId > 0 && license.UserSubscriptionId > 0 {
+		if sub, subErr := model.GetUserSubscriptionById(license.UserSubscriptionId); subErr == nil && sub != nil {
+			if license.ExpiredTime != sub.EndTime {
+				license.ExpiredTime = sub.EndTime
+				_ = license.Update()
+			}
+			if sub.Status != "active" || (sub.EndTime > 0 && sub.EndTime <= now) {
+				status = "expired"
+			}
+		}
+	}
 	var token *model.Token
 	if license.TokenId > 0 {
 		token, err = model.GetTokenById(license.TokenId)
@@ -284,20 +329,64 @@ func QueryClientCompatUsage(c *gin.Context) {
 	usedAmount := 0.0
 	remainAmount := quotaToClientAmount(license.Quota)
 	unlimited := license.UnlimitedQuota
-	if token != nil {
+	subscriptionPlanTitle := ""
+	subscriptionStatus := ""
+	subscriptionNextResetTime := int64(0)
+	subscriptionTotalAmount := int64(0)
+	subscriptionUsedAmount := int64(0)
+	subscriptionResetPeriod := ""
+	subscriptionResetCustomSeconds := int64(0)
+	if license.SubscriptionPlanId > 0 {
+		if plan, planErr := model.GetSubscriptionPlanById(license.SubscriptionPlanId); planErr == nil && plan != nil {
+			subscriptionPlanTitle = plan.Title
+			subscriptionTotalAmount = plan.TotalAmount
+			subscriptionResetPeriod = plan.QuotaResetPeriod
+			subscriptionResetCustomSeconds = plan.QuotaResetCustomSeconds
+		}
+		if license.UserSubscriptionId > 0 {
+			if sub, subErr := model.GetUserSubscriptionById(license.UserSubscriptionId); subErr == nil && sub != nil {
+				subscriptionStatus = sub.Status
+				subscriptionNextResetTime = sub.NextResetTime
+				subscriptionTotalAmount = sub.AmountTotal
+				subscriptionUsedAmount = sub.AmountUsed
+			}
+		}
+		usedAmount, remainAmount, unlimited, status = clientCompatSubscriptionUsageState(license, status)
+	}
+	if token != nil && license.SubscriptionPlanId <= 0 {
 		usedAmount = quotaToClientAmount(token.UsedQuota)
 		remainAmount = quotaToClientAmount(token.RemainQuota)
 		unlimited = token.UnlimitedQuota
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"success":       true,
 		"used_amount":   usedAmount,
 		"remain_amount": remainAmount,
 		"unlimited":     unlimited,
 		"expires_at":    clientCompatExpiresAt(license, token),
 		"status":        status,
-	})
+	}
+	if license.SubscriptionPlanId > 0 {
+		response["quota_mode"] = "subscription"
+		response["subscription_plan_id"] = license.SubscriptionPlanId
+		response["subscription_plan_title"] = subscriptionPlanTitle
+		response["subscription_status"] = firstNonEmpty(subscriptionStatus, status)
+		response["subscription_next_reset_time"] = subscriptionNextResetTime
+		response["subscription_total_amount"] = quotaToClientAmount(int(subscriptionTotalAmount))
+		response["subscription_used_amount"] = quotaToClientAmount(int(subscriptionUsedAmount))
+		response["subscription_reset_period"] = subscriptionResetPeriod
+		response["subscription_reset_custom_seconds"] = subscriptionResetCustomSeconds
+		if plan, planErr := model.GetSubscriptionPlanById(license.SubscriptionPlanId); planErr == nil && plan != nil {
+			response["subscription_price_amount"] = plan.PriceAmount
+			response["subscription_duration_unit"] = plan.DurationUnit
+			response["subscription_duration_value"] = plan.DurationValue
+			response["subscription_custom_seconds"] = plan.CustomSeconds
+		}
+	} else {
+		response["quota_mode"] = "quota"
+	}
+	c.JSON(http.StatusOK, response)
 }
 
 func loadClientCompatConfig() clientCompatConfig {
@@ -401,24 +490,43 @@ func getOrCreateClientCompatToken(license *model.ClientLicense, deviceHash strin
 	if license.ActivatedTime == 0 && license.DurationDays > 0 {
 		license.ActivatedTime = now
 	}
+
+	var subscription *model.UserSubscription
+	var subscriptionPlan *model.SubscriptionPlan
+	var dedicatedUser *model.User
+	var err error
+	if license.SubscriptionPlanId > 0 {
+		dedicatedUser, subscription, subscriptionPlan, err = ensureClientCompatLicenseSubscriptionResources(license)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if license.TokenId > 0 {
 		token, err := model.GetTokenById(license.TokenId)
 		if err == nil {
-			license.DeviceHash = firstNonEmpty(license.DeviceHash, deviceHash)
-			license.LastRedeemTime = now
-			if updateErr := license.Update(); updateErr != nil {
-				return nil, updateErr
+			if dedicatedUser != nil && token.UserId != dedicatedUser.Id {
+				license.TokenId = 0
+			} else {
+				license.DeviceHash = firstNonEmpty(license.DeviceHash, deviceHash)
+				license.LastRedeemTime = now
+				if updateErr := license.Update(); updateErr != nil {
+					return nil, updateErr
+				}
+				return syncClientLicenseToken(license, token)
 			}
-			return syncClientLicenseToken(license, token)
 		}
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, err
 		}
 	}
 
-	user, err := ensureClientCompatUser()
-	if err != nil {
-		return nil, err
+	user := dedicatedUser
+	if user == nil {
+		user, err = ensureClientCompatUser()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	key, err := common.GenerateKey()
@@ -427,8 +535,19 @@ func getOrCreateClientCompatToken(license *model.ClientLicense, deviceHash strin
 	}
 
 	expiredAt := int64(-1)
-	if license.ExpiredTime > 0 {
+	if subscription != nil && subscription.EndTime > 0 {
+		expiredAt = subscription.EndTime
+	} else if license.ExpiredTime > 0 {
 		expiredAt = license.ExpiredTime
+	}
+
+	remainQuota := license.Quota
+	unlimitedQuota := license.UnlimitedQuota
+	tokenGroup := strings.TrimSpace(common.GetEnvOrDefaultString("AI_DEPLOYER_CLIENT_SERVICE_GROUP", "default"))
+	if subscriptionPlan != nil && subscription != nil {
+		remainQuota = calculateSubscriptionRemainingQuota(subscription)
+		unlimitedQuota = true
+		tokenGroup = ""
 	}
 
 	token := &model.Token{
@@ -439,10 +558,10 @@ func getOrCreateClientCompatToken(license *model.ClientLicense, deviceHash strin
 		CreatedTime:        now,
 		AccessedTime:       now,
 		ExpiredTime:        expiredAt,
-		RemainQuota:        license.Quota,
-		UnlimitedQuota:     license.UnlimitedQuota,
+		RemainQuota:        remainQuota,
+		UnlimitedQuota:     unlimitedQuota,
 		ModelLimitsEnabled: false,
-		Group:              strings.TrimSpace(common.GetEnvOrDefaultString("AI_DEPLOYER_CLIENT_SERVICE_GROUP", "default")),
+		Group:              tokenGroup,
 	}
 	if err := token.Insert(); err != nil {
 		return nil, err
@@ -457,6 +576,130 @@ func getOrCreateClientCompatToken(license *model.ClientLicense, deviceHash strin
 	}
 
 	return syncClientLicenseToken(license, token)
+}
+
+func ensureClientCompatLicenseSubscriptionResources(license *model.ClientLicense) (*model.User, *model.UserSubscription, *model.SubscriptionPlan, error) {
+	if license == nil || license.SubscriptionPlanId <= 0 {
+		return nil, nil, nil, nil
+	}
+	plan, err := model.GetSubscriptionPlanById(license.SubscriptionPlanId)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	user, err := ensureClientCompatLicenseUser(license)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if license.UserSubscriptionId > 0 {
+		sub, err := model.GetUserSubscriptionById(license.UserSubscriptionId)
+		if err == nil && sub != nil {
+			if license.ExpiredTime != sub.EndTime {
+				license.ExpiredTime = sub.EndTime
+				_ = license.Update()
+			}
+			return user, sub, plan, nil
+		}
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, nil, err
+		}
+	}
+
+	now := common.GetTimestamp()
+	var created *model.UserSubscription
+	err = model.DB.Transaction(func(tx *gorm.DB) error {
+		sub, err := model.CreateUserSubscriptionFromPlanTx(tx, user.Id, plan, "client_license")
+		if err != nil {
+			return err
+		}
+		created = sub
+		updateMap := map[string]any{
+			"user_id":              user.Id,
+			"user_subscription_id": sub.Id,
+			"expired_time":         sub.EndTime,
+			"activated_time":       firstNonZeroInt64(license.ActivatedTime, now),
+		}
+		return tx.Model(&model.ClientLicense{}).Where("id = ?", license.Id).Updates(updateMap).Error
+	})
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	license.UserId = user.Id
+	license.UserSubscriptionId = created.Id
+	license.ExpiredTime = created.EndTime
+	if license.ActivatedTime == 0 {
+		license.ActivatedTime = now
+	}
+	return user, created, plan, nil
+}
+
+func ensureClientCompatLicenseUser(license *model.ClientLicense) (*model.User, error) {
+	if license == nil {
+		return nil, errors.New("license is nil")
+	}
+	if license.UserId > 0 {
+		user, err := model.GetUserById(license.UserId, true)
+		if err == nil && user != nil {
+			setting := user.GetSetting()
+			updated := false
+			if common.NormalizeBillingPreference(setting.BillingPreference) != "subscription_only" {
+				setting.BillingPreference = "subscription_only"
+				user.SetSetting(setting)
+				updated = true
+			}
+			if user.Status != common.UserStatusEnabled {
+				user.Status = common.UserStatusEnabled
+				updated = true
+			}
+			if updated {
+				if err := user.Update(false); err != nil {
+					return nil, err
+				}
+			}
+			return user, nil
+		}
+	}
+
+	username := fmt.Sprintf("cdxsub_%d", license.Id)
+	group := strings.TrimSpace(common.GetEnvOrDefaultString("AI_DEPLOYER_CLIENT_SERVICE_GROUP", "default"))
+	password := common.GetUUID()
+	created := &model.User{
+		Username:    username,
+		Password:    password,
+		DisplayName: fmt.Sprintf("Card %d", license.Id),
+		Role:        common.RoleCommonUser,
+		Status:      common.UserStatusEnabled,
+		Group:       group,
+		Remark:      "dedicated client license subscription user",
+	}
+	if err := created.Insert(0); err != nil {
+		return nil, err
+	}
+	if err := model.DB.Where("username = ?", username).First(created).Error; err != nil {
+		return nil, err
+	}
+	setting := created.GetSetting()
+	setting.BillingPreference = "subscription_only"
+	created.SetSetting(setting)
+	if err := created.Update(false); err != nil {
+		return nil, err
+	}
+	license.UserId = created.Id
+	_ = license.Update()
+	return created, nil
+}
+
+func calculateSubscriptionRemainingQuota(sub *model.UserSubscription) int {
+	if sub == nil {
+		return 0
+	}
+	if sub.AmountTotal <= 0 {
+		return 0
+	}
+	remain := sub.AmountTotal - sub.AmountUsed
+	if remain < 0 {
+		return 0
+	}
+	return int(remain)
 }
 
 func ensureClientCompatUser() (*model.User, error) {
@@ -568,6 +811,33 @@ func syncClientLicenseToken(license *model.ClientLicense, token *model.Token) (*
 
 	now := common.GetTimestamp()
 	token.Name = buildClientCompatTokenName(license)
+	if license.SubscriptionPlanId > 0 && license.UserSubscriptionId > 0 {
+		sub, err := model.GetUserSubscriptionById(license.UserSubscriptionId)
+		if err == nil && sub != nil {
+			token.UnlimitedQuota = true
+			token.RemainQuota = calculateSubscriptionRemainingQuota(sub)
+			if sub.EndTime > 0 {
+				token.ExpiredTime = sub.EndTime
+			} else {
+				token.ExpiredTime = -1
+			}
+			switch {
+			case license.Status != model.ClientLicenseStatusActive:
+				token.Status = common.TokenStatusDisabled
+			case sub.Status != "active":
+				token.Status = common.TokenStatusExpired
+			case sub.EndTime > 0 && sub.EndTime <= now:
+				token.Status = common.TokenStatusExpired
+			default:
+				token.Status = common.TokenStatusEnabled
+			}
+			token.Group = ""
+			if err := token.Update(); err != nil {
+				return nil, err
+			}
+			return token, nil
+		}
+	}
 	token.UnlimitedQuota = license.UnlimitedQuota
 	effectiveExpiredTime := license.EffectiveExpiredTime()
 	if effectiveExpiredTime > 0 {
@@ -605,8 +875,15 @@ func syncClientLicenseToken(license *model.ClientLicense, token *model.Token) (*
 
 func clientCompatExpiresAt(license *model.ClientLicense, token *model.Token) string {
 	expiredTime := int64(0)
+	if license != nil && license.UserSubscriptionId > 0 {
+		if sub, err := model.GetUserSubscriptionById(license.UserSubscriptionId); err == nil && sub != nil && sub.EndTime > 0 {
+			expiredTime = sub.EndTime
+		}
+	}
 	if license != nil {
-		expiredTime = license.EffectiveExpiredTime()
+		if expiredTime == 0 {
+			expiredTime = license.EffectiveExpiredTime()
+		}
 	}
 	if expiredTime == 0 && token != nil && token.ExpiredTime > 0 {
 		expiredTime = token.ExpiredTime
@@ -615,6 +892,28 @@ func clientCompatExpiresAt(license *model.ClientLicense, token *model.Token) str
 		return ""
 	}
 	return time.Unix(expiredTime, 0).UTC().Format(time.RFC3339)
+}
+
+func clientCompatSubscriptionUsageState(license *model.ClientLicense, fallbackStatus string) (float64, float64, bool, string) {
+	if license == nil || license.SubscriptionPlanId <= 0 {
+		return 0, 0, false, fallbackStatus
+	}
+	if license.UserSubscriptionId > 0 {
+		if sub, err := model.GetUserSubscriptionById(license.UserSubscriptionId); err == nil && sub != nil {
+			unlimited := sub.AmountTotal <= 0
+			remain := calculateSubscriptionRemainingQuota(sub)
+			status := fallbackStatus
+			if sub.Status != "active" || (sub.EndTime > 0 && sub.EndTime <= common.GetTimestamp()) {
+				status = "expired"
+			}
+			return quotaToClientAmount(int(sub.AmountUsed)), quotaToClientAmount(remain), unlimited, status
+		}
+	}
+	if plan, err := model.GetSubscriptionPlanById(license.SubscriptionPlanId); err == nil && plan != nil {
+		unlimited := plan.TotalAmount <= 0
+		return 0, quotaToClientAmount(int(plan.TotalAmount)), unlimited, fallbackStatus
+	}
+	return 0, 0, false, fallbackStatus
 }
 
 func quotaToClientAmount(quota int) float64 {
@@ -641,4 +940,13 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func firstNonZeroInt64(values ...int64) int64 {
+	for _, value := range values {
+		if value != 0 {
+			return value
+		}
+	}
+	return 0
 }

@@ -697,6 +697,17 @@ func GetAllUserSubscriptions(userId int) ([]SubscriptionSummary, error) {
 	return buildSubscriptionSummaries(subs), nil
 }
 
+func GetUserSubscriptionById(id int) (*UserSubscription, error) {
+	if id <= 0 {
+		return nil, errors.New("invalid userSubscriptionId")
+	}
+	var sub UserSubscription
+	if err := DB.Where("id = ?", id).First(&sub).Error; err != nil {
+		return nil, err
+	}
+	return &sub, nil
+}
+
 func buildSubscriptionSummaries(subs []UserSubscription) []SubscriptionSummary {
 	if len(subs) == 0 {
 		return []SubscriptionSummary{}

@@ -14,16 +14,17 @@ import (
 )
 
 type clientLicenseCreateRequest struct {
-	Code           string `json:"code"`
-	Name           string `json:"name"`
-	Status         string `json:"status"`
-	DeviceHash     string `json:"device_hash"`
-	UnlimitedQuota bool   `json:"unlimited_quota"`
-	Quota          int    `json:"quota"`
-	DurationDays   int    `json:"duration_days"`
-	ExpiredTime    int64  `json:"expired_time"`
-	BatchCount     int    `json:"batch_count"`
-	CodeLength     int    `json:"code_length"`
+	Code               string `json:"code"`
+	Name               string `json:"name"`
+	Status             string `json:"status"`
+	DeviceHash         string `json:"device_hash"`
+	SubscriptionPlanId int    `json:"subscription_plan_id"`
+	UnlimitedQuota     bool   `json:"unlimited_quota"`
+	Quota              int    `json:"quota"`
+	DurationDays       int    `json:"duration_days"`
+	ExpiredTime        int64  `json:"expired_time"`
+	BatchCount         int    `json:"batch_count"`
+	CodeLength         int    `json:"code_length"`
 }
 
 func GetAllClientLicenses(c *gin.Context) {
@@ -99,14 +100,21 @@ func AddClientLicense(c *gin.Context) {
 		}
 
 		license := &model.ClientLicense{
-			Code:           code,
-			Name:           buildClientLicenseName(req.Name, code, count, i),
-			Status:         firstNonEmpty(strings.TrimSpace(req.Status), model.ClientLicenseStatusActive),
-			DeviceHash:     strings.TrimSpace(req.DeviceHash),
-			UnlimitedQuota: req.UnlimitedQuota,
-			Quota:          req.Quota,
-			DurationDays:   req.DurationDays,
-			ExpiredTime:    req.ExpiredTime,
+			Code:               code,
+			Name:               buildClientLicenseName(req.Name, code, count, i),
+			Status:             firstNonEmpty(strings.TrimSpace(req.Status), model.ClientLicenseStatusActive),
+			SubscriptionPlanId: req.SubscriptionPlanId,
+			DeviceHash:         strings.TrimSpace(req.DeviceHash),
+			UnlimitedQuota:     req.UnlimitedQuota,
+			Quota:              req.Quota,
+			DurationDays:       req.DurationDays,
+			ExpiredTime:        req.ExpiredTime,
+		}
+		if license.SubscriptionPlanId > 0 {
+			license.UnlimitedQuota = true
+			license.Quota = 0
+			license.DurationDays = 0
+			license.ExpiredTime = 0
 		}
 
 		if valid, msg := validateClientLicensePayload(license, true); !valid {
@@ -144,6 +152,12 @@ func UpdateClientLicense(c *gin.Context) {
 		common.ApiErrorMsg(c, "license id is required")
 		return
 	}
+	if license.SubscriptionPlanId > 0 {
+		license.UnlimitedQuota = true
+		license.Quota = 0
+		license.DurationDays = 0
+		license.ExpiredTime = 0
+	}
 	if valid, msg := validateClientLicensePayload(&license, false); !valid {
 		common.ApiErrorMsg(c, msg)
 		return
@@ -158,11 +172,31 @@ func UpdateClientLicense(c *gin.Context) {
 	current.Code = license.Code
 	current.Name = license.Name
 	current.Status = license.Status
+	if current.SubscriptionPlanId != license.SubscriptionPlanId {
+		if current.TokenId > 0 {
+			disableClientLicenseTokenIfNeeded(current)
+		}
+		if current.UserSubscriptionId > 0 {
+			_, _ = model.AdminInvalidateUserSubscription(current.UserSubscriptionId)
+		}
+		if current.SubscriptionPlanId <= 0 && license.SubscriptionPlanId > 0 {
+			current.UserId = 0
+		}
+		current.TokenId = 0
+		current.UserSubscriptionId = 0
+	}
+	current.SubscriptionPlanId = license.SubscriptionPlanId
 	current.DeviceHash = license.DeviceHash
 	current.UnlimitedQuota = license.UnlimitedQuota
 	current.Quota = license.Quota
 	current.DurationDays = license.DurationDays
 	current.ExpiredTime = license.ExpiredTime
+	if current.SubscriptionPlanId > 0 {
+		current.UnlimitedQuota = true
+		current.Quota = 0
+		current.DurationDays = 0
+		current.ExpiredTime = 0
+	}
 
 	if err := current.Update(); err != nil {
 		common.ApiError(c, err)
@@ -192,6 +226,9 @@ func DeleteClientLicense(c *gin.Context) {
 	}
 	if license.TokenId > 0 {
 		disableClientLicenseTokenIfNeeded(license)
+	}
+	if license.UserSubscriptionId > 0 {
+		_, _ = model.AdminInvalidateUserSubscription(license.UserSubscriptionId)
 	}
 	if err := model.DeleteClientLicenseById(id); err != nil {
 		common.ApiError(c, err)
@@ -227,6 +264,11 @@ func validateClientLicensePayload(license *model.ClientLicense, creating bool) (
 	if license.DurationDays > 0 && license.ExpiredTime > 0 {
 		return false, "license duration_days and expired_time cannot both be set"
 	}
+	if license.SubscriptionPlanId > 0 {
+		if _, err := model.GetSubscriptionPlanById(license.SubscriptionPlanId); err != nil {
+			return false, "subscription plan does not exist"
+		}
+	}
 	if license.ExpiredTime != 0 && license.ExpiredTime < common.GetTimestamp() {
 		return false, "license expired_time is invalid"
 	}
@@ -255,6 +297,47 @@ func enrichClientLicenseUsage(license *model.ClientLicense) {
 	}
 	license.UsedQuota = 0
 	license.RemainingQuota = license.Quota
+	license.SubscriptionPlanTitle = ""
+	license.SubscriptionPriceAmount = 0
+	license.SubscriptionDurationUnit = ""
+	license.SubscriptionDurationValue = 0
+	license.SubscriptionCustomSeconds = 0
+	license.UserSubscriptionStatus = ""
+	license.SubscriptionNextResetTime = 0
+	license.SubscriptionAmountTotal = 0
+	license.SubscriptionAmountUsed = 0
+
+	if license.SubscriptionPlanId > 0 {
+		if plan, err := model.GetSubscriptionPlanById(license.SubscriptionPlanId); err == nil && plan != nil {
+			license.SubscriptionPlanTitle = plan.Title
+			license.SubscriptionPriceAmount = plan.PriceAmount
+			license.SubscriptionDurationUnit = plan.DurationUnit
+			license.SubscriptionDurationValue = plan.DurationValue
+			license.SubscriptionCustomSeconds = plan.CustomSeconds
+			license.SubscriptionQuotaResetPeriod = plan.QuotaResetPeriod
+			license.SubscriptionQuotaResetCustomSeconds = plan.QuotaResetCustomSeconds
+			if plan.TotalAmount > 0 && license.SubscriptionAmountTotal == 0 {
+				license.SubscriptionAmountTotal = plan.TotalAmount
+			}
+		}
+	}
+	if license.UserSubscriptionId > 0 {
+		if sub, err := model.GetUserSubscriptionById(license.UserSubscriptionId); err == nil && sub != nil {
+			license.UserSubscriptionStatus = sub.Status
+			license.SubscriptionNextResetTime = sub.NextResetTime
+			license.SubscriptionAmountTotal = sub.AmountTotal
+			license.SubscriptionAmountUsed = sub.AmountUsed
+			license.ExpiredTime = sub.EndTime
+			if sub.AmountTotal > 0 {
+				remain := sub.AmountTotal - sub.AmountUsed
+				if remain < 0 {
+					remain = 0
+				}
+				license.RemainingQuota = int(remain)
+				license.UsedQuota = int(sub.AmountUsed)
+			}
+		}
+	}
 	if license.TokenId <= 0 {
 		return
 	}
@@ -262,8 +345,10 @@ func enrichClientLicenseUsage(license *model.ClientLicense) {
 	if err != nil || token == nil {
 		return
 	}
-	license.UsedQuota = token.UsedQuota
-	license.RemainingQuota = token.RemainQuota
+	if license.SubscriptionPlanId <= 0 {
+		license.UsedQuota = token.UsedQuota
+		license.RemainingQuota = token.RemainQuota
+	}
 }
 
 func errorsIsNotFound(err error) bool {

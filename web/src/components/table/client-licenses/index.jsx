@@ -202,6 +202,75 @@ const formatExpires = (record, t) => {
   return t('永不过期');
 };
 
+const formatSubscriptionResetPeriod = (record, t) => {
+  const period = record?.subscription_quota_reset_period || '';
+  if (!period) return '-';
+  if (period === 'daily') return t('每天');
+  if (period === 'weekly') return t('每周');
+  if (period === 'monthly') return t('每月');
+  if (period === 'custom') {
+    const seconds = Number(record?.subscription_quota_reset_custom_seconds || 0);
+    if (seconds >= 86400) return `${Math.floor(seconds / 86400)} ${t('天')}`;
+    if (seconds >= 3600) return `${Math.floor(seconds / 3600)} ${t('小时')}`;
+    if (seconds >= 60) return `${Math.floor(seconds / 60)} ${t('分钟')}`;
+    return `${seconds} ${t('秒')}`;
+  }
+  return t('不重置');
+};
+
+const formatSubscriptionDuration = (record, t) => {
+  const unit = record?.subscription_duration_unit || '';
+  const value = Number(record?.subscription_duration_value || 0);
+  const customSeconds = Number(record?.subscription_custom_seconds || 0);
+  if (unit === 'year' && value > 0) return `${value}${t('骞?')}`;
+  if (unit === 'month' && value > 0) return `${value}${t('鏈?')}`;
+  if (unit === 'day' && value > 0) return `${value}${t('澶?)}`;
+  if (unit === 'hour' && value > 0) return `${value}${t('灏忔椂')}`;
+  if (unit === 'custom' && customSeconds > 0) {
+    if (customSeconds % 86400 === 0) return `${Math.floor(customSeconds / 86400)}${t('澶?)}`;
+    if (customSeconds % 3600 === 0) return `${Math.floor(customSeconds / 3600)}${t('灏忔椂')}`;
+    if (customSeconds % 60 === 0) return `${Math.floor(customSeconds / 60)}${t('鍒嗛挓')}`;
+    return `${customSeconds}${t('绉?)}`;
+  }
+  return '-';
+};
+
+const formatSubscriptionTotalAmount = (quota, t) => {
+  if (Number(quota || 0) <= 0) return t('涓嶉檺');
+  return formatUsdQuota(quota);
+};
+
+const buildSubscriptionPlanOptionLabel = (item, t) => {
+  const plan = item?.plan || {};
+  const price = Number(plan.price_amount || 0).toFixed(2);
+  const duration = formatSubscriptionDuration(
+    {
+      subscription_duration_unit: plan.duration_unit,
+      subscription_duration_value: plan.duration_value,
+      subscription_custom_seconds: plan.custom_seconds,
+    },
+    t,
+  );
+  const totalAmount = formatSubscriptionTotalAmount(plan.total_amount, t);
+  const resetPeriod = formatSubscriptionResetPeriod(
+    {
+      subscription_quota_reset_period: plan.quota_reset_period,
+      subscription_quota_reset_custom_seconds: plan.quota_reset_custom_seconds,
+    },
+    t,
+  );
+  return `${plan.title || '-'} · $${price} · ${duration} · ${totalAmount} / ${resetPeriod}`;
+};
+
+const formatSubscriptionStatusLabel = (status, t) => {
+  if (!status) return '-';
+  if (status === 'active') return t('鐢熸晥涓?);
+  if (status === 'cancelled') return t('宸插彇娑?);
+  if (status === 'expired') return t('宸茶繃鏈?);
+  if (status === 'pending') return t('寰呮縺娲?);
+  return status;
+};
+
 const useClientLicensesData = () => {
   const { t } = useTranslation();
   const [licenses, setLicenses] = useState([]);
@@ -825,11 +894,14 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
   const isEdit = editingLicense.id !== undefined;
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(isEdit);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const formApiRef = useRef(null);
 
   const getInitValues = () => ({
     code: '',
     name: '',
+    subscription_plan_id: 0,
     unlimited_quota: true,
     quota: 0,
     device_hash: '',
@@ -847,6 +919,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
       formApiRef.current?.setValues({
         ...getInitValues(),
         ...data,
+        subscription_plan_id: data.subscription_plan_id || 0,
         quota: quotaToUsdAmount(data.quota || 0),
         expired_time: data.expired_time === 0 ? null : new Date(data.expired_time * 1000),
       });
@@ -856,8 +929,26 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
     setLoading(false);
   };
 
+  const loadSubscriptionPlans = async () => {
+    setPlansLoading(true);
+    try {
+      const res = await API.get('/api/subscription/admin/plans');
+      const { success, message, data } = res.data;
+      if (success) {
+        setSubscriptionPlans(data || []);
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      setPlansLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!formApiRef.current) return;
+    loadSubscriptionPlans();
     if (isEdit) {
       loadLicense();
     } else {
@@ -877,6 +968,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
       name: (values.name || values.code || '').trim(),
       unlimited_quota: normalizeBooleanValue(values.unlimited_quota, true),
       quota: usdAmountToQuota(values.quota),
+      subscription_plan_id: parseInt(values.subscription_plan_id, 10) || 0,
       batch_count: parseInt(values.batch_count, 10) || 1,
       code_length: parseInt(values.code_length, 10) || 8,
       duration_days: parseInt(values.duration_days, 10) || 0,
@@ -965,7 +1057,11 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
           }}
           onSubmit={submit}
         >
-          {({ values }) => (
+          {({ values }) => {
+            const selectedSubscriptionPlan = (subscriptionPlans || []).find(
+              (item) => Number(item?.plan?.id || 0) === (parseInt(values.subscription_plan_id, 10) || 0),
+            );
+            return (
             <div className='p-2'>
               <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
                 <div className='mb-3 flex items-center'>
@@ -1017,7 +1113,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                       label={t('过期时间')}
                       type='dateTime'
                       placeholder={t('留空表示永不过期；如设置持续天数请留空')}
-                      disabled={(Number(values.duration_days) || 0) > 0}
+                      disabled={(Number(values.duration_days) || 0) > 0 || (Number(values.subscription_plan_id) || 0) > 0}
                       style={{ width: '100%' }}
                       showClear
                     />
@@ -1050,8 +1146,11 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                       field='duration_days'
                       label={t('持续天数')}
                       min={0}
+                      disabled={(Number(values.subscription_plan_id) || 0) > 0}
                       style={{ width: '100%' }}
-                      extraText={t('填 0 表示不用持续天数；大于 0 时从首次激活开始计时')}
+                      extraText={(Number(values.subscription_plan_id) || 0) > 0
+                        ? t('已选择订阅套餐时，这个持续天数字段不生效')
+                        : t('填 0 表示不用持续天数；大于 0 时从首次激活开始计时')}
                     />
                   </Col>
                 </Row>
@@ -1071,11 +1170,50 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                 </div>
                 <Row gutter={12}>
                   <Col span={24}>
+                    <Form.Select
+                      field='subscription_plan_id'
+                      label={t('订阅套餐')}
+                      placeholder={plansLoading ? t('加载套餐中...') : t('不选则为普通额度卡')}
+                      style={{ width: '100%' }}
+                      optionList={(subscriptionPlans || []).map((item) => ({
+                        label: buildSubscriptionPlanOptionLabel(item, t),
+                        value: item?.plan?.id,
+                      }))}
+                      showClear
+                    />
+                    {selectedSubscriptionPlan ? (
+                      <div className='mt-2 text-xs text-gray-600 rounded-xl bg-gray-50 px-3 py-2 border border-gray-200'>
+                        <div>{selectedSubscriptionPlan?.plan?.subtitle || t('璁㈤槄鍗″皢鎸夋濂楅寮€閫氾紝棰濆害涓庡埌鏈熸椂闂翠互濂楅涓哄噯')}</div>
+                        <div className='mt-1'>
+                          {t('浠锋牸')}：${Number(selectedSubscriptionPlan?.plan?.price_amount || 0).toFixed(2)} ·
+                          {' '}{t('鏈夋晥鏈?)}：{formatSubscriptionDuration(
+                            {
+                              subscription_duration_unit: selectedSubscriptionPlan?.plan?.duration_unit,
+                              subscription_duration_value: selectedSubscriptionPlan?.plan?.duration_value,
+                              subscription_custom_seconds: selectedSubscriptionPlan?.plan?.custom_seconds,
+                            },
+                            t,
+                          )} ·
+                          {' '}{t('鎬婚搴?)}：{formatSubscriptionTotalAmount(selectedSubscriptionPlan?.plan?.total_amount, t)} ·
+                          {' '}{t('閲嶇疆')}：{formatSubscriptionResetPeriod(
+                            {
+                              subscription_quota_reset_period: selectedSubscriptionPlan?.plan?.quota_reset_period,
+                              subscription_quota_reset_custom_seconds:
+                                selectedSubscriptionPlan?.plan?.quota_reset_custom_seconds,
+                            },
+                            t,
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+                  </Col>
+                  <Col span={24}>
                     <Form.Switch
                       field='unlimited_quota'
                       label={t('无限额度')}
                       checkedText={t('开')}
                       uncheckedText={t('关')}
+                      disabled={(Number(values.subscription_plan_id) || 0) > 0}
                     />
                   </Col>
                   <Col span={24}>
@@ -1084,11 +1222,13 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                       label={t('额度（USD）')}
                       min={0}
                       precision={2}
-                      disabled={values.unlimited_quota}
+                      disabled={values.unlimited_quota || (Number(values.subscription_plan_id) || 0) > 0}
                       style={{ width: '100%' }}
-                      extraText={`${t('按美元填写，保存时自动换算为原生额度')} · ${t('原生额度')}：${usdAmountToQuota(
-                        values.quota,
-                      )}`}
+                      extraText={(Number(values.subscription_plan_id) || 0) > 0
+                        ? t('已选择订阅套餐时，这个额度字段不生效')
+                        : `${t('按美元填写，保存时自动换算为原生额度')} · ${t('原生额度')}：${usdAmountToQuota(
+                            values.quota,
+                          )}`}
                     />
                   </Col>
                 </Row>
@@ -1118,7 +1258,8 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                 </Row>
               </Card>
             </div>
-          )}
+          );
+          }}
         </Form>
       </Spin>
     </SideSheet>
@@ -1219,6 +1360,66 @@ const ClientLicensesTable = ({
         title: t('归属用户'),
         dataIndex: 'user_id',
         render: (text) => text || '-',
+      },
+      {
+        title: t('订阅计划'),
+        dataIndex: 'subscription_plan_title',
+        render: (text, record) =>
+          record.subscription_plan_id ? (
+            <Popover
+              position='top'
+              content={
+                <div>
+                  <div>{text || `#${record.subscription_plan_id}`}</div>
+                  <div>{t('浠锋牸')}：${Number(record.subscription_price_amount || 0).toFixed(2)}</div>
+                  <div>{t('鏈夋晥鏈?)}：{formatSubscriptionDuration(record, t)}</div>
+                  <div>{t('总额度')}：{record.subscription_amount_total > 0 ? formatUsdQuota(record.subscription_amount_total) : t('不限')}</div>
+                  <div>{t('重置')}：{formatSubscriptionResetPeriod(record, t)}</div>
+                </div>
+              }
+            >
+              <Tag color='blue' shape='circle'>
+                {text || `#${record.subscription_plan_id}`}
+              </Tag>
+            </Popover>
+          ) : (
+            '-'
+          ),
+      },
+      {
+        title: t('订阅状态'),
+        dataIndex: 'user_subscription_status',
+        render: (text, record) =>
+          record.subscription_plan_id ? (
+            <Tag
+              color={
+                (text || 'pending') === 'active'
+                  ? 'green'
+                  : (text || 'pending') === 'cancelled'
+                    ? 'red'
+                    : (text || 'pending') === 'pending'
+                      ? 'grey'
+                    : 'orange'
+              }
+              shape='circle'
+            >
+              {text
+                ? formatSubscriptionStatusLabel(text, t)
+                : formatSubscriptionStatusLabel('pending', t)}
+            </Tag>
+          ) : (
+            '-'
+          ),
+      },
+      {
+        title: t('下次重置'),
+        dataIndex: 'subscription_next_reset_time',
+        render: (text, record) =>
+          record.subscription_plan_id
+            ? record.user_subscription_id
+              ? formatTime(text, t, '未设置')
+              : t('待激活')
+            : '-',
       },
       {
         title: t('创建时间'),
