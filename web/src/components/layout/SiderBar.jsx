@@ -186,6 +186,12 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
+        text: t('客户端远端配置'),
+        itemKey: 'client_remote_config',
+        to: '/client-remote-config',
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
+      {
         text: t('用户管理'),
         itemKey: 'user',
         to: '/user',
