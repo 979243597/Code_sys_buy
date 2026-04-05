@@ -35,6 +35,7 @@ import Channel from './pages/Channel';
 import Token from './pages/Token';
 import Redemption from './pages/Redemption';
 import ClientLicense from './pages/ClientLicense';
+import ClientRemoteConfig from './pages/ClientRemoteConfig';
 import TopUp from './pages/TopUp';
 import Log from './pages/Log';
 import Chat from './pages/Chat';
@@ -169,6 +170,14 @@ function App() {
           element={
             <AdminRoute>
               <ClientLicense />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path='/console/client-remote-config'
+          element={
+            <AdminRoute>
+              <ClientRemoteConfig />
             </AdminRoute>
           }
         />

@@ -36,6 +36,7 @@ const routerMap = {
   token: '/console/token',
   redemption: '/console/redemption',
   client_license: '/console/client-license',
+  client_remote_config: '/console/client-remote-config',
   topup: '/console/topup',
   user: '/console/user',
   subscription: '/console/subscription',

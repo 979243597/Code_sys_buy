@@ -78,6 +78,15 @@ const CLIENT_LICENSE_ACTIONS = {
   DISABLE: 'disable',
 };
 
+const CLIENT_LICENSE_VIEW_FILTERS = {
+  ALL: 'all',
+  EFFECTIVE: 'effective',
+  EXPIRED: 'expired',
+  DISABLED: 'disabled',
+  ACTIVATED: 'activated',
+  PENDING: 'pending',
+};
+
 const CLIENT_COMPAT_OPTION_FIELDS = [
   'AIDeployerClientEnabled',
   'AIDeployerClientNotice',
@@ -286,6 +295,7 @@ const useClientLicensesData = () => {
   const [deletingRecord, setDeletingRecord] = useState(null);
   const [formApi, setFormApi] = useState(null);
   const [compactMode, setCompactMode] = useTableCompactMode('client-licenses');
+  const [viewFilter, setViewFilter] = useState(CLIENT_LICENSE_VIEW_FILTERS.ALL);
 
   const formInitValues = {
     searchKeyword: '',
@@ -296,10 +306,17 @@ const useClientLicensesData = () => {
     return values.searchKeyword || '';
   };
 
-  const loadLicenses = async (page = 1, size = pageSize) => {
+  const buildViewQuery = (filter = viewFilter) =>
+    filter && filter !== CLIENT_LICENSE_VIEW_FILTERS.ALL
+      ? `&view=${encodeURIComponent(filter)}`
+      : '';
+
+  const loadLicenses = async (page = 1, size = pageSize, filter = viewFilter) => {
     setLoading(true);
     try {
-      const res = await API.get(`/api/client_license/?p=${page}&page_size=${size}`);
+      const res = await API.get(
+        `/api/client_license/?p=${page}&page_size=${size}${buildViewQuery(filter)}`,
+      );
       const { success, message, data } = res.data;
       if (success) {
         setLicenses(data.items || []);
@@ -315,7 +332,7 @@ const useClientLicensesData = () => {
     }
   };
 
-  const searchLicenses = async (page = 1, size = pageSize) => {
+  const searchLicenses = async (page = 1, size = pageSize, filter = viewFilter) => {
     const keyword = getSearchKeyword();
     if (!keyword) {
       await loadLicenses(page, size);
@@ -325,7 +342,7 @@ const useClientLicensesData = () => {
     setSearching(true);
     try {
       const res = await API.get(
-        `/api/client_license/search?keyword=${encodeURIComponent(keyword)}&p=${page}&page_size=${size}`,
+        `/api/client_license/search?keyword=${encodeURIComponent(keyword)}&p=${page}&page_size=${size}${buildViewQuery(filter)}`,
       );
       const { success, message, data } = res.data;
       if (success) {
@@ -347,6 +364,16 @@ const useClientLicensesData = () => {
       await searchLicenses(page, pageSize);
     } else {
       await loadLicenses(page, pageSize);
+    }
+  };
+
+  const applyViewFilter = async (nextFilter) => {
+    setViewFilter(nextFilter);
+    setActivePage(1);
+    if (getSearchKeyword()) {
+      await searchLicenses(1, pageSize, nextFilter);
+    } else {
+      await loadLicenses(1, pageSize, nextFilter);
     }
   };
 
@@ -418,6 +445,42 @@ const useClientLicensesData = () => {
     }
     const text = selectedRows.map((item) => `${item.name || item.code}    ${item.code}`).join('\n');
     await copyText(text);
+  };
+
+  const batchManageLicenses = async (action) => {
+    if (selectedRows.length === 0) {
+      showError(t('请至少选择一个客户端卡密！'));
+      return;
+    }
+    setLoading(true);
+    try {
+      const results = await Promise.all(
+        selectedRows.map(async (record) => {
+          if (action === CLIENT_LICENSE_ACTIONS.DELETE) {
+            return API.delete(`/api/client_license/${record.id}`);
+          }
+          const nextStatus =
+            action === CLIENT_LICENSE_ACTIONS.DISABLE
+              ? CLIENT_LICENSE_STATUS.DISABLED
+              : CLIENT_LICENSE_STATUS.ACTIVE;
+          return API.put('/api/client_license/', {
+            ...record,
+            status: nextStatus,
+          });
+        }),
+      );
+      const failed = results.find((item) => !item?.data?.success);
+      if (failed) {
+        throw new Error(failed?.data?.message || t('批量操作失败'));
+      }
+      showSuccess(t('批量操作已完成'));
+      setSelectedRows([]);
+      await refresh();
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const batchExportLicenses = async () => {
@@ -522,9 +585,12 @@ const useClientLicensesData = () => {
     setFormApi,
     searchLicenses,
     refresh,
+    viewFilter,
+    setViewFilter: applyViewFilter,
     compactMode,
     setCompactMode,
     manageLicense,
+    batchManageLicenses,
     copyText,
     batchCopyLicenses,
     batchExportLicenses,
@@ -566,7 +632,66 @@ const ClientLicensesDescription = ({
   </div>
 );
 
-const ClientCompatSettingsCard = ({ t }) => {
+const ClientLicensesViewFilters = ({
+  viewFilter,
+  setViewFilter,
+  batchManageLicenses,
+  selectedCount,
+  t,
+}) => {
+  const filters = [
+    { key: CLIENT_LICENSE_VIEW_FILTERS.ALL, label: t('全部') },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.EFFECTIVE, label: t('生效中') },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.EXPIRED, label: t('已过期') },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.DISABLED, label: t('已禁用') },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.ACTIVATED, label: t('已激活') },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.PENDING, label: t('未激活') },
+  ];
+
+  return (
+    <div className='flex flex-wrap gap-2 mb-4'>
+      {filters.map((item) => (
+        <Button
+          key={item.key}
+          type={viewFilter === item.key ? 'primary' : 'tertiary'}
+          size='small'
+          onClick={() => setViewFilter(item.key)}
+        >
+          {item.label}
+        </Button>
+      ))}
+      <Button
+        type='tertiary'
+        className='flex-1 md:flex-initial'
+        onClick={() => batchManageLicenses(CLIENT_LICENSE_ACTIONS.ENABLE)}
+        disabled={selectedCount === 0}
+        size='small'
+      >
+        {t('批量启用')}
+      </Button>
+      <Button
+        type='tertiary'
+        className='flex-1 md:flex-initial'
+        onClick={() => batchManageLicenses(CLIENT_LICENSE_ACTIONS.DISABLE)}
+        disabled={selectedCount === 0}
+        size='small'
+      >
+        {t('批量禁用')}
+      </Button>
+      <Button
+        type='tertiary'
+        className='flex-1 md:flex-initial'
+        onClick={() => batchManageLicenses(CLIENT_LICENSE_ACTIONS.DELETE)}
+        disabled={selectedCount === 0}
+        size='small'
+      >
+        {t('批量删除')}
+      </Button>
+    </div>
+  );
+};
+
+export const ClientCompatSettingsCard = ({ t }) => {
   const formApiRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -823,6 +948,8 @@ const ClientLicensesActions = ({
   setShowEdit,
   batchCopyLicenses,
   batchExportLicenses,
+  batchManageLicenses,
+  selectedCount,
   t,
 }) => {
   const handleAdd = () => {
@@ -1606,8 +1733,45 @@ const ClientLicensesPage = () => {
               setShowEdit={data.setShowEdit}
               batchCopyLicenses={data.batchCopyLicenses}
               batchExportLicenses={data.batchExportLicenses}
+              batchManageLicenses={data.batchManageLicenses}
+              selectedCount={data.selectedRows.length}
               t={data.t}
             />
+            <Button
+              type='tertiary'
+              size='small'
+              onClick={() => {
+                window.location.href = '/console/client-remote-config';
+              }}
+            >
+              {data.t('客户端远端配置')}
+            </Button>
+            <div className='hidden'>
+              <Button
+                type='tertiary'
+                size='small'
+                disabled={data.selectedRows.length === 0}
+                onClick={() => data.batchManageLicenses(CLIENT_LICENSE_ACTIONS.ENABLE)}
+              >
+                {data.t('批量启用')}
+              </Button>
+              <Button
+                type='tertiary'
+                size='small'
+                disabled={data.selectedRows.length === 0}
+                onClick={() => data.batchManageLicenses(CLIENT_LICENSE_ACTIONS.DISABLE)}
+              >
+                {data.t('批量禁用')}
+              </Button>
+              <Button
+                type='tertiary'
+                size='small'
+                disabled={data.selectedRows.length === 0}
+                onClick={() => data.batchManageLicenses(CLIENT_LICENSE_ACTIONS.DELETE)}
+              >
+                {data.t('批量删除')}
+              </Button>
+            </div>
             <div className='w-full md:w-full lg:w-auto order-1 md:order-2'>
               <ClientLicensesFilters
                 formInitValues={data.formInitValues}
@@ -1631,7 +1795,13 @@ const ClientLicensesPage = () => {
         })}
         t={data.t}
       >
-        <ClientCompatSettingsCard t={data.t} />
+        <ClientLicensesViewFilters
+          viewFilter={data.viewFilter}
+          setViewFilter={data.setViewFilter}
+          batchManageLicenses={data.batchManageLicenses}
+          selectedCount={data.selectedRows.length}
+          t={data.t}
+        />
         <ClientLicensesTable {...data} />
       </CardPro>
     </>

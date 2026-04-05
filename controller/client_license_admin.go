@@ -29,7 +29,8 @@ type clientLicenseCreateRequest struct {
 
 func GetAllClientLicenses(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
-	licenses, total, err := model.GetAllClientLicenses(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	view := c.Query("view")
+	licenses, total, err := model.GetAllClientLicenses(pageInfo.GetStartIdx(), pageInfo.GetPageSize(), view)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -43,7 +44,8 @@ func GetAllClientLicenses(c *gin.Context) {
 func SearchClientLicenses(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
 	keyword := c.Query("keyword")
-	licenses, total, err := model.SearchClientLicenses(keyword, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	view := c.Query("view")
+	licenses, total, err := model.SearchClientLicenses(keyword, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), view)
 	if err != nil {
 		common.ApiError(c, err)
 		return
