@@ -103,6 +103,8 @@ const buildModelState = (name, sourceMaps) => {
   const completionRatioMeta = normalizeCompletionRatioMeta(
     sourceMaps.CompletionRatioMeta?.[name],
   );
+  const effectiveCompletionRatio =
+    completionRatio || completionRatioMeta.ratio || '';
   const cacheRatio = toNumericString(sourceMaps.CacheRatio[name]);
   const createCacheRatio = toNumericString(sourceMaps.CreateCacheRatio[name]);
   const imageRatio = toNumericString(sourceMaps.ImageRatio[name]);
@@ -127,19 +129,9 @@ const buildModelState = (name, sourceMaps) => {
     completionRatioLocked: completionRatioMeta.locked,
     lockedCompletionRatio: completionRatioMeta.ratio,
     completionPrice:
-      inputPriceNumber !== null &&
-      hasValue(
-        completionRatioMeta.locked
-          ? completionRatioMeta.ratio
-          : completionRatio,
-      )
+      inputPriceNumber !== null && hasValue(effectiveCompletionRatio)
         ? formatNumber(
-            inputPriceNumber *
-              Number(
-                completionRatioMeta.locked
-                  ? completionRatioMeta.ratio
-                  : completionRatio,
-              ),
+            inputPriceNumber * Number(effectiveCompletionRatio),
           )
         : '',
     cachePrice:
@@ -161,7 +153,7 @@ const buildModelState = (name, sourceMaps) => {
         : '',
     rawRatios: {
       modelRatio,
-      completionRatio,
+      completionRatio: effectiveCompletionRatio,
       cacheRatio,
       createCacheRatio,
       imageRatio,

@@ -469,8 +469,6 @@ type CompletionRatioInfo struct {
 func GetCompletionRatioInfo(name string) CompletionRatioInfo {
 	name = FormatMatchingModelName(name)
 
-	// If a ratio is explicitly configured for this exact model name, treat it as
-	// an administrator override and do not mark it as locked in the UI.
 	if ratio, ok := completionRatioMap.Get(name); ok {
 		return CompletionRatioInfo{
 			Ratio:  ratio,
@@ -478,13 +476,7 @@ func GetCompletionRatioInfo(name string) CompletionRatioInfo {
 		}
 	}
 
-	hardCodedRatio, locked := getHardcodedCompletionModelRatio(name)
-	if locked {
-		return CompletionRatioInfo{
-			Ratio:  hardCodedRatio,
-			Locked: true,
-		}
-	}
+	hardCodedRatio, _ := getHardcodedCompletionModelRatio(name)
 
 	return CompletionRatioInfo{
 		Ratio:  hardCodedRatio,
