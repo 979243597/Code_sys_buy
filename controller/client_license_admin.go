@@ -33,6 +33,7 @@ func GetAllClientLicenses(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	enrichClientLicensesUsage(licenses)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(licenses)
 	common.ApiSuccess(c, pageInfo)
@@ -46,6 +47,7 @@ func SearchClientLicenses(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	enrichClientLicensesUsage(licenses)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(licenses)
 	common.ApiSuccess(c, pageInfo)
@@ -62,6 +64,7 @@ func GetClientLicense(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	enrichClientLicenseUsage(license)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -238,6 +241,29 @@ func validateClientLicensePayload(license *model.ClientLicense, creating bool) (
 	}
 
 	return true, ""
+}
+
+func enrichClientLicensesUsage(licenses []*model.ClientLicense) {
+	for _, license := range licenses {
+		enrichClientLicenseUsage(license)
+	}
+}
+
+func enrichClientLicenseUsage(license *model.ClientLicense) {
+	if license == nil {
+		return
+	}
+	license.UsedQuota = 0
+	license.RemainingQuota = license.Quota
+	if license.TokenId <= 0 {
+		return
+	}
+	token, err := model.GetTokenById(license.TokenId)
+	if err != nil || token == nil {
+		return
+	}
+	license.UsedQuota = token.UsedQuota
+	license.RemainingQuota = token.RemainQuota
 }
 
 func errorsIsNotFound(err error) bool {

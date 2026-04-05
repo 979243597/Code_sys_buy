@@ -30,6 +30,8 @@ type ClientLicense struct {
 	LastRedeemTime int64          `json:"last_redeem_time" gorm:"bigint"`
 	DurationDays   int            `json:"duration_days" gorm:"default:0"`
 	ExpiredTime    int64          `json:"expired_time" gorm:"bigint;default:0"`
+	RemainingQuota int            `json:"remaining_quota" gorm:"-"`
+	UsedQuota      int            `json:"used_quota" gorm:"-"`
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
 }
 
