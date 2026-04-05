@@ -449,17 +449,14 @@ func UpdateCompletionRatioByJSONString(jsonStr string) error {
 func GetCompletionRatio(name string) float64 {
 	name = FormatMatchingModelName(name)
 
-	if strings.Contains(name, "/") {
-		if ratio, ok := completionRatioMap.Get(name); ok {
-			return ratio
-		}
+	// Explicit configured ratios should take precedence over hardcoded defaults.
+	// This allows administrators to override locked defaults via settings.
+	if ratio, ok := completionRatioMap.Get(name); ok {
+		return ratio
 	}
 	hardCodedRatio, contain := getHardcodedCompletionModelRatio(name)
 	if contain {
 		return hardCodedRatio
-	}
-	if ratio, ok := completionRatioMap.Get(name); ok {
-		return ratio
 	}
 	return hardCodedRatio
 }
@@ -472,12 +469,12 @@ type CompletionRatioInfo struct {
 func GetCompletionRatioInfo(name string) CompletionRatioInfo {
 	name = FormatMatchingModelName(name)
 
-	if strings.Contains(name, "/") {
-		if ratio, ok := completionRatioMap.Get(name); ok {
-			return CompletionRatioInfo{
-				Ratio:  ratio,
-				Locked: false,
-			}
+	// If a ratio is explicitly configured for this exact model name, treat it as
+	// an administrator override and do not mark it as locked in the UI.
+	if ratio, ok := completionRatioMap.Get(name); ok {
+		return CompletionRatioInfo{
+			Ratio:  ratio,
+			Locked: false,
 		}
 	}
 
@@ -486,13 +483,6 @@ func GetCompletionRatioInfo(name string) CompletionRatioInfo {
 		return CompletionRatioInfo{
 			Ratio:  hardCodedRatio,
 			Locked: true,
-		}
-	}
-
-	if ratio, ok := completionRatioMap.Get(name); ok {
-		return CompletionRatioInfo{
-			Ratio:  ratio,
-			Locked: false,
 		}
 	}
 
