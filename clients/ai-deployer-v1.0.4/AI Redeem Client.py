@@ -4,6 +4,7 @@ import json
 import platform
 import sys
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 from PyQt5.QtCore import Qt
@@ -92,6 +93,21 @@ def _safe_request(method, url, **kwargs):
             kwargs["verify"] = False
             return getattr(requests, method)(url, **kwargs)
         raise
+
+
+def _format_expires_for_display(expires_at):
+    if not expires_at:
+        return ""
+    try:
+        normalized = expires_at.strip()
+        if normalized.endswith("Z"):
+            normalized = normalized[:-1] + "+00:00"
+        dt = datetime.fromisoformat(normalized)
+        if dt.tzinfo is not None:
+            dt = dt.astimezone()
+        return dt.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return expires_at
 
 
 def _redeem_card(code):
@@ -335,7 +351,10 @@ class RedeemWindow(QWidget):
         self.url_value.setText(base_url_v1)
         self.key_value.setText(result.get("key", ""))
         expires_at = result.get("expires_at", "")
-        self.status_label.setText("兑换成功")
+        if expires_at:
+            self.status_label.setText(f"兑换成功，到期 {_format_expires_for_display(expires_at)}")
+        else:
+            self.status_label.setText("兑换成功")
         self.status_label.setStyleSheet(f"color: {C.SUCCESS}; font-size: 12px;")
 
 

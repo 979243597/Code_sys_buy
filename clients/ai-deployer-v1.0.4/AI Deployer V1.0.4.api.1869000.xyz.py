@@ -45,7 +45,7 @@ def _safe_request(method, url, **kwargs):
 APP_NAME = 'AI Deployer V1.0.4'
 APP_VERSION = '1.0.4'
 _EP = 'aHR0cHM6Ly9hcGkuMTg2OTAwMC54eXo='
-(WINDOW_W, WINDOW_H) = (540, 760)
+(WINDOW_W, WINDOW_H) = (540, 950)
 RADIUS = 16
 _DEFAULT_CODEX_MODEL = 'gpt-5.3-codex'
 _DEFAULT_OC_MODEL = 'openai/gpt-5.3-codex'
@@ -158,6 +158,22 @@ def _compare_versions(local, remote):
         return 0
     except Exception:
         return 0
+
+
+def _format_expires_for_display(expires_at):
+    '''把服务端返回的 RFC3339 UTC 时间转换为本地显示'''
+    if not expires_at:
+        return ''
+    try:
+        normalized = expires_at.strip()
+        if normalized.endswith('Z'):
+            normalized = normalized[:-1] + '+00:00'
+        dt = datetime.fromisoformat(normalized)
+        if dt.tzinfo is not None:
+            dt = dt.astimezone()
+        return dt.strftime('%Y-%m-%d %H:%M')
+    except Exception:
+        return expires_at
 
 
 
@@ -865,28 +881,39 @@ class MainWindow(QWidget):
         deploy_layout.addWidget(self.opencode_card)
         model_frame = QFrame()
         model_frame.setStyleSheet(f'''\n            QFrame {{\n                background: {C.CARD_ALT};\n                border: 1px solid {C.BORDER};\n                border-radius: 10px;\n            }}\n        ''')
-        model_frame.setMinimumHeight(92)
+        model_frame.setMinimumHeight(122)
+        model_frame.setMaximumHeight(122)
         model_layout = QVBoxLayout(model_frame)
-        model_layout.setContentsMargins(10, 10, 10, 10)
-        model_layout.setSpacing(6)
+        model_layout.setContentsMargins(10, 4, 10, 8)
+        model_layout.setSpacing(4)
+        header_row = QHBoxLayout()
+        header_row.setSpacing(8)
+        header_row.setContentsMargins(0, 0, 0, 0)
         model_title = QLabel('🎯  模型配置')
-        model_title.setStyleSheet(f'''color: {C.TEXT}; font-size: 13px; font-weight: bold; border: none;''')
-        model_layout.addWidget(model_title)
-        fields_row = QHBoxLayout()
-        fields_row.setSpacing(10)
-        codex_col = QVBoxLayout()
-        codex_col.setSpacing(4)
+        model_title.setStyleSheet(f'''color: {C.TEXT}; font-size: 12px; font-weight: bold; border: none; margin: 0; padding: 0;''')
+        model_title.setFixedWidth(110)
+        header_row.addWidget(model_title)
         codex_model_label = QLabel('Codex 模型')
-        codex_model_label.setStyleSheet(f'''color: {C.TEXT2}; font-size: 11px; font-weight: bold; border: none;''')
-        codex_col.addWidget(codex_model_label)
+        codex_model_label.setAlignment(Qt.AlignCenter)
+        codex_model_label.setStyleSheet(f'''color: {C.TEXT2}; font-size: 10px; font-weight: bold; border: none; margin: 0; padding: 0;''')
+        header_row.addWidget(codex_model_label, 1)
+        oc_model_label = QLabel('OpenCode 模型')
+        oc_model_label.setAlignment(Qt.AlignCenter)
+        oc_model_label.setStyleSheet(f'''color: {C.TEXT2}; font-size: 10px; font-weight: bold; border: none; margin: 0; padding: 0;''')
+        header_row.addWidget(oc_model_label, 1)
+        model_layout.addLayout(header_row)
+        fields_row = QHBoxLayout()
+        fields_row.setSpacing(8)
+        fields_row.setContentsMargins(0, 0, 0, 0)
+        codex_col = QVBoxLayout()
+        codex_col.setSpacing(0)
+        codex_col.setContentsMargins(0, 0, 0, 0)
         self.codex_model_combo = self._create_model_combo(_CODEX_MODEL_OPTIONS, _DEFAULT_CODEX_MODEL)
         codex_col.addWidget(self.codex_model_combo)
         fields_row.addLayout(codex_col, 1)
         oc_col = QVBoxLayout()
-        oc_col.setSpacing(4)
-        oc_model_label = QLabel('OpenCode 模型')
-        oc_model_label.setStyleSheet(f'''color: {C.TEXT2}; font-size: 11px; font-weight: bold; border: none;''')
-        oc_col.addWidget(oc_model_label)
+        oc_col.setSpacing(0)
+        oc_col.setContentsMargins(0, 0, 0, 0)
         self.oc_model_combo = self._create_model_combo(_OC_MODEL_OPTIONS, _DEFAULT_OC_MODEL)
         oc_col.addWidget(self.oc_model_combo)
         fields_row.addLayout(oc_col, 1)
@@ -902,13 +929,13 @@ class MainWindow(QWidget):
         self.oc_model_combo.setEnabled(self.opencode_card.isChecked())
         self.deploy_btn = QPushButton('⚡  一键激活')
         self.deploy_btn.setCursor(Qt.PointingHandCursor)
-        self.deploy_btn.setFixedHeight(58)
+        self.deploy_btn.setFixedHeight(54)
         self.deploy_btn.setStyleSheet(f'''\n            QPushButton {{\n                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,\n                    stop:0 #8f78ff, stop:1 #a78bff);\n                color: #ffffff;\n                border: 2px solid {C.BORDER};\n                border-radius: 18px;\n                font-size: 18px;\n                font-weight: bold;\n            }}\n            QPushButton:hover {{\n                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,\n                    stop:0 #9b84ff, stop:1 #b396ff);\n            }}\n            QPushButton:pressed {{ background: {C.ACCENT}; }}\n            QPushButton:disabled {{ background: #e6e0f7; color: {C.TEXT3}; border-color: {C.BORDER}; }}\n        ''')
         self.deploy_btn.clicked.connect(self._on_deploy)
         deploy_layout.addWidget(self.deploy_btn)
         self.uninstall_btn = QPushButton('🗑  卸载已部署配置')
         self.uninstall_btn.setCursor(Qt.PointingHandCursor)
-        self.uninstall_btn.setFixedHeight(52)
+        self.uninstall_btn.setFixedHeight(48)
         self.uninstall_btn.setStyleSheet(f'''\n            QPushButton {{\n                background: {C.CARD_ALT};\n                color: {C.ERROR};\n                border: 2px solid {C.ERROR};\n                border-radius: 18px;\n                font-size: 16px;\n                font-weight: bold;\n            }}\n            QPushButton:hover {{\n                background: #fff1ec;\n            }}\n            QPushButton:disabled {{\n                color: {C.TEXT3};\n                border-color: {C.BORDER};\n                background: #f3f0fb;\n            }}\n        ''')
         self.uninstall_btn.clicked.connect(self._on_uninstall)
         deploy_layout.addWidget(self.uninstall_btn)
@@ -1109,7 +1136,7 @@ class MainWindow(QWidget):
             else:
                 all_logs.append(f'''剩余额度: ${remain:.4f}''')
             if expires_at:
-                all_logs.append(f'''到期时间: {expires_at}''')
+                all_logs.append(f'''到期时间: {_format_expires_for_display(expires_at)}''')
             if status == 'disabled':
                 all_logs.append('⚠ 卡密状态: 已禁用')
             self._usage_result = result
@@ -1166,7 +1193,7 @@ class MainWindow(QWidget):
             self._last_expires_at = expires_at
             all_logs.append('卡密兑换成功')
             if expires_at:
-                all_logs.append(f'''到期时间: {expires_at}''')
+                all_logs.append(f'''到期时间: {_format_expires_for_display(expires_at)}''')
             all_logs.append('正在部署配置...')
             deployer = Deployer(api_key, self._selected_codex_model(), self._selected_oc_model(), self._remote_small_model)
             ok = True
@@ -1228,13 +1255,7 @@ class MainWindow(QWidget):
     
     def _show_expires(self, expires_at):
         '''在界面上显示到期时间'''
-        
-        try:
-            dt = datetime.fromisoformat(expires_at)
-            display = dt.strftime('%Y-%m-%d %H:%M')
-        except Exception:
-            display = expires_at
-
+        display = _format_expires_for_display(expires_at)
         self.api_status.setText(f'''✓ 到期: {display}''')
         self.api_status.setStyleSheet(f'''color: {C.SUCCESS}; font-size: 11px; border: none;''')
 
