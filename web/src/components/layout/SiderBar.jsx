@@ -217,12 +217,12 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const chatMenuItems = useMemo(() => {
     const items = [
       {
-        text: t('鎿嶇粌鍦?),
+        text: t('操练场'),
         itemKey: 'playground',
         to: '/playground',
       },
       {
-        text: t('鑱婂ぉ'),
+        text: t('聊天'),
         itemKey: 'chat',
         items: chatItems,
       },
@@ -279,7 +279,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
           updateRouterMapWithChats(chats);
         }
       } catch (e) {
-        showError('鑱婂ぉ鏁版嵁瑙ｆ瀽澶辫触');
+        showError('聊天数据解析失败');
       }
     }
   }, []);
@@ -453,7 +453,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
           {hasSectionVisibleModules('chat') && (
             <div className='sidebar-section'>
               {!collapsed && (
-                <div className='sidebar-group-label'>{t('鑱婂ぉ')}</div>
+                <div className='sidebar-group-label'>{t('聊天')}</div>
               )}
               {chatMenuItems.map((item) => renderSubItem(item))}
             </div>
@@ -465,7 +465,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
               <Divider className='sidebar-divider' />
               <div>
                 {!collapsed && (
-                  <div className='sidebar-group-label'>{t('鎺у埗鍙?)}</div>
+                  <div className='sidebar-group-label'>{t('控制台')}</div>
                 )}
                 {workspaceItems.map((item) => renderNavItem(item))}
               </div>
@@ -531,7 +531,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
                 : { padding: '4px 12px', width: '100%' }
             }
           >
-            {!collapsed ? t('鏀惰捣渚ц竟鏍?) : null}
+            {!collapsed ? t('收起侧边栏') : null}
           </Button>
         </SkeletonWrapper>
       </div>
@@ -540,5 +540,10 @@ const SiderBar = ({ onNavigate = () => {} }) => {
 };
 
 export default SiderBar;
+
+
+
+
+
 
 

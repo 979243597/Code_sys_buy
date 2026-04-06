@@ -148,7 +148,7 @@ export default function SettingsSidebarModulesAdmin(props) {
       });
       const { success, message } = res.data;
       if (success) {
-        showSuccess(t('淇濆瓨鎴愬姛'));
+        showSuccess(t('保存成功'));
 
         // 立即更新 StatusContext 中的状态
         statusDispatch({
@@ -457,5 +457,8 @@ export default function SettingsSidebarModulesAdmin(props) {
     </Card>
   );
 }
+
+
+
 
 

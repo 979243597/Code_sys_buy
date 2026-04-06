@@ -1167,7 +1167,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
               icon={<IconSave />}
               loading={loading}
             >
-              {t('鎻愪氦')}
+              {t('提交')}
             </Button>
             <Button theme='light' type='primary' onClick={onClose} icon={<IconClose />}>
               {t('取消')}
@@ -1300,7 +1300,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                     <Form.Select
                       field='subscription_plan_id'
                       label={t('订阅套餐')}
-                      placeholder={plansLoading ? t('鍔犺浇濂楅涓?..') : t('涓嶉€夊垯涓烘櫘閫氶搴﹀崱')}
+                      placeholder={plansLoading ? t('加载套餐中...') : t('不选则为普通额度卡')}
                       style={{ width: '100%' }}
                       optionList={(subscriptionPlans || []).map((item) => ({
                         label: buildSubscriptionPlanOptionLabel(item, t),
@@ -1809,6 +1809,12 @@ const ClientLicensesPage = () => {
 };
 
 export default ClientLicensesPage;
+
+
+
+
+
+
 
 
 
