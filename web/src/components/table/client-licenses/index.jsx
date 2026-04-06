@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2025 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
@@ -173,19 +173,19 @@ const isActivated = (record) =>
 
 const statusTag = (record, t) => {
   if (isExpired(record)) {
-    return { color: 'orange', text: t('已过期') };
+    return { color: 'orange', text: t('宸茶繃鏈?) };
   }
   if (record?.status === CLIENT_LICENSE_STATUS.DISABLED) {
-    return { color: 'red', text: t('已禁用') };
+    return { color: 'red', text: t('宸茬鐢?) };
   }
-  return { color: 'green', text: t('生效中') };
+  return { color: 'green', text: t('鐢熸晥涓?) };
 };
 
 const activationTag = (record, t) => {
   if (isActivated(record)) {
-    return { color: 'blue', text: t('已激活') };
+    return { color: 'blue', text: t('宸叉縺娲?) };
   }
-  return { color: 'grey', text: t('未激活') };
+  return { color: 'grey', text: t('鏈縺娲?) };
 };
 
 const maskText = (text) => {
@@ -195,7 +195,7 @@ const maskText = (text) => {
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
 };
 
-const formatTime = (value, t, emptyText = '未设置') => {
+const formatTime = (value, t, emptyText = '鏈缃?) => {
   if (!value || value === 0) return t(emptyText);
   return timestamp2string(value);
 };
@@ -206,9 +206,9 @@ const formatExpires = (record, t) => {
     return timestamp2string(effectiveExpiredTime);
   }
   if (record?.duration_days > 0) {
-    return t('激活后 {{count}} 天', { count: record.duration_days });
+    return t('婵€娲诲悗 {{count}} 澶?, { count: record.duration_days });
   }
-  return t('永不过期');
+  return t('姘镐笉杩囨湡');
 };
 
 const formatSubscriptionResetPeriod = (record, t) => {
@@ -231,21 +231,21 @@ const formatSubscriptionDuration = (record, t) => {
   const unit = record?.subscription_duration_unit || '';
   const value = Number(record?.subscription_duration_value || 0);
   const customSeconds = Number(record?.subscription_custom_seconds || 0);
-  if (unit === 'year' && value > 0) return `${value}${t('骞?')}`;
-  if (unit === 'month' && value > 0) return `${value}${t('鏈?')}`;
-  if (unit === 'day' && value > 0) return `${value}${t('澶?)}`;
-  if (unit === 'hour' && value > 0) return `${value}${t('灏忔椂')}`;
+  if (unit === 'year' && value > 0) return `${value}${t('年')}`;
+  if (unit === 'month' && value > 0) return `${value}${t('个月')}`;
+  if (unit === 'day' && value > 0) return `${value}${t('天')}`;
+  if (unit === 'hour' && value > 0) return `${value}${t('小时')}`;
   if (unit === 'custom' && customSeconds > 0) {
-    if (customSeconds % 86400 === 0) return `${Math.floor(customSeconds / 86400)}${t('澶?)}`;
-    if (customSeconds % 3600 === 0) return `${Math.floor(customSeconds / 3600)}${t('灏忔椂')}`;
-    if (customSeconds % 60 === 0) return `${Math.floor(customSeconds / 60)}${t('鍒嗛挓')}`;
-    return `${customSeconds}${t('绉?)}`;
+    if (customSeconds % 86400 === 0) return `${Math.floor(customSeconds / 86400)}${t('天')}`;
+    if (customSeconds % 3600 === 0) return `${Math.floor(customSeconds / 3600)}${t('小时')}`;
+    if (customSeconds % 60 === 0) return `${Math.floor(customSeconds / 60)}${t('分钟')}`;
+    return `${customSeconds}${t('秒')}`;
   }
   return '-';
 };
 
 const formatSubscriptionTotalAmount = (quota, t) => {
-  if (Number(quota || 0) <= 0) return t('涓嶉檺');
+  if (Number(quota || 0) <= 0) return t('不限');
   return formatUsdQuota(quota);
 };
 
@@ -273,10 +273,10 @@ const buildSubscriptionPlanOptionLabel = (item, t) => {
 
 const formatSubscriptionStatusLabel = (status, t) => {
   if (!status) return '-';
-  if (status === 'active') return t('鐢熸晥涓?);
-  if (status === 'cancelled') return t('宸插彇娑?);
-  if (status === 'expired') return t('宸茶繃鏈?);
-  if (status === 'pending') return t('寰呮縺娲?);
+  if (status === 'active') return t('生效中');
+  if (status === 'cancelled') return t('已取消');
+  if (status === 'expired') return t('已过期');
+  if (status === 'pending') return t('待激活');
   return status;
 };
 
@@ -414,7 +414,7 @@ const useClientLicensesData = () => {
       }
       const { success, message } = res.data;
       if (success) {
-        showSuccess(t('操作成功完成！'));
+        showSuccess(t('鎿嶄綔鎴愬姛瀹屾垚锛?));
         await refresh();
       } else {
         showError(message);
@@ -428,10 +428,10 @@ const useClientLicensesData = () => {
 
   const copyText = async (text) => {
     if (await copy(text)) {
-      showSuccess(t('已复制到剪贴板！'));
+      showSuccess(t('宸插鍒跺埌鍓创鏉匡紒'));
     } else {
       Modal.error({
-        title: t('无法复制到剪贴板，请手动复制'),
+        title: t('鏃犳硶澶嶅埗鍒板壀璐存澘锛岃鎵嬪姩澶嶅埗'),
         content: text,
         size: 'large',
       });
@@ -440,7 +440,7 @@ const useClientLicensesData = () => {
 
   const batchCopyLicenses = async () => {
     if (selectedRows.length === 0) {
-      showError(t('请至少选择一个客户端卡密！'));
+      showError(t('璇疯嚦灏戦€夋嫨涓€涓鎴风鍗″瘑锛?));
       return;
     }
     const text = selectedRows.map((item) => `${item.name || item.code}    ${item.code}`).join('\n');
@@ -449,7 +449,7 @@ const useClientLicensesData = () => {
 
   const batchManageLicenses = async (action) => {
     if (selectedRows.length === 0) {
-      showError(t('请至少选择一个客户端卡密！'));
+      showError(t('璇疯嚦灏戦€夋嫨涓€涓鎴风鍗″瘑锛?));
       return;
     }
     setLoading(true);
@@ -471,9 +471,9 @@ const useClientLicensesData = () => {
       );
       const failed = results.find((item) => !item?.data?.success);
       if (failed) {
-        throw new Error(failed?.data?.message || t('批量操作失败'));
+        throw new Error(failed?.data?.message || t('鎵归噺鎿嶄綔澶辫触'));
       }
-      showSuccess(t('批量操作已完成'));
+      showSuccess(t('鎵归噺鎿嶄綔宸插畬鎴?));
       setSelectedRows([]);
       await refresh();
     } catch (error) {
@@ -486,7 +486,7 @@ const useClientLicensesData = () => {
   const batchExportLicenses = async () => {
     const exportRows = selectedRows.length > 0 ? selectedRows : licenses;
     if (exportRows.length === 0) {
-      showError(t('当前没有可导出的卡密数据'));
+      showError(t('褰撳墠娌℃湁鍙鍑虹殑鍗″瘑鏁版嵁'));
       return;
     }
     const header = [
@@ -533,8 +533,8 @@ const useClientLicensesData = () => {
     );
     showSuccess(
       selectedRows.length > 0
-        ? t('已导出所选卡密')
-        : t('已导出当前页卡密'),
+        ? t('宸插鍑烘墍閫夊崱瀵?)
+        : t('宸插鍑哄綋鍓嶉〉鍗″瘑'),
     );
   };
 
@@ -614,17 +614,17 @@ const ClientLicensesDescription = ({
     <div className='flex flex-col gap-2'>
       <div className='flex items-center text-orange-500'>
         <KeyRound size={16} className='mr-2' />
-        <Typography.Text>{t('客户端卡密管理')}</Typography.Text>
+        <Typography.Text>{t('瀹㈡埛绔崱瀵嗙鐞?)}</Typography.Text>
       </div>
       <div className='flex flex-wrap gap-2'>
         <Tag color='blue' shape='circle' size='small'>
-          {t('总数')} {total}
+          {t('鎬绘暟')} {total}
         </Tag>
         <Tag color='cyan' shape='circle' size='small'>
-          {t('已激活')} {activatedCount}
+          {t('宸叉縺娲?)} {activatedCount}
         </Tag>
         <Tag color='green' shape='circle' size='small'>
-          {t('可用中')} {enabledCount}
+          {t('鍙敤涓?)} {enabledCount}
         </Tag>
       </div>
     </div>
@@ -640,12 +640,12 @@ const ClientLicensesViewFilters = ({
   t,
 }) => {
   const filters = [
-    { key: CLIENT_LICENSE_VIEW_FILTERS.ALL, label: t('全部') },
-    { key: CLIENT_LICENSE_VIEW_FILTERS.EFFECTIVE, label: t('生效中') },
-    { key: CLIENT_LICENSE_VIEW_FILTERS.EXPIRED, label: t('已过期') },
-    { key: CLIENT_LICENSE_VIEW_FILTERS.DISABLED, label: t('已禁用') },
-    { key: CLIENT_LICENSE_VIEW_FILTERS.ACTIVATED, label: t('已激活') },
-    { key: CLIENT_LICENSE_VIEW_FILTERS.PENDING, label: t('未激活') },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.ALL, label: t('鍏ㄩ儴') },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.EFFECTIVE, label: t('鐢熸晥涓?) },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.EXPIRED, label: t('宸茶繃鏈?) },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.DISABLED, label: t('宸茬鐢?) },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.ACTIVATED, label: t('宸叉縺娲?) },
+    { key: CLIENT_LICENSE_VIEW_FILTERS.PENDING, label: t('鏈縺娲?) },
   ];
 
   return (
@@ -667,7 +667,7 @@ const ClientLicensesViewFilters = ({
         disabled={selectedCount === 0}
         size='small'
       >
-        {t('批量启用')}
+        {t('鎵归噺鍚敤')}
       </Button>
       <Button
         type='tertiary'
@@ -676,7 +676,7 @@ const ClientLicensesViewFilters = ({
         disabled={selectedCount === 0}
         size='small'
       >
-        {t('批量禁用')}
+        {t('鎵归噺绂佺敤')}
       </Button>
       <Button
         type='tertiary'
@@ -685,7 +685,7 @@ const ClientLicensesViewFilters = ({
         disabled={selectedCount === 0}
         size='small'
       >
-        {t('批量删除')}
+        {t('鎵归噺鍒犻櫎')}
       </Button>
     </div>
   );
@@ -714,7 +714,7 @@ export const ClientCompatSettingsCard = ({ t }) => {
       const res = await API.get('/api/option/');
       const { success, message, data } = res.data;
       if (!success) {
-        showError(message || t('加载失败，请重试'));
+        showError(message || t('鍔犺浇澶辫触锛岃閲嶈瘯'));
         return;
       }
       const optionMap = (data || []).reduce((acc, item) => {
@@ -741,7 +741,7 @@ export const ClientCompatSettingsCard = ({ t }) => {
       setSnapshot(nextValues);
       formApiRef.current?.setValues(nextValues);
     } catch (error) {
-      showError(error.message || t('加载失败，请重试'));
+      showError(error.message || t('鍔犺浇澶辫触锛岃閲嶈瘯'));
     } finally {
       setLoading(false);
     }
@@ -761,7 +761,7 @@ export const ClientCompatSettingsCard = ({ t }) => {
     }));
 
     if (updates.length === 0) {
-      showError(t('你似乎并没有修改什么'));
+      showError(t('浣犱技涔庡苟娌℃湁淇敼浠€涔?));
       return;
     }
 
@@ -772,12 +772,12 @@ export const ClientCompatSettingsCard = ({ t }) => {
       );
       const failed = results.find((item) => !item?.data?.success);
       if (failed) {
-        throw new Error(failed?.data?.message || t('保存失败，请重试'));
+        throw new Error(failed?.data?.message || t('淇濆瓨澶辫触锛岃閲嶈瘯'));
       }
-      showSuccess(t('客户端远端配置已保存'));
+      showSuccess(t('瀹㈡埛绔繙绔厤缃凡淇濆瓨'));
       await loadSettings();
     } catch (error) {
-      showError(error.message || t('保存失败，请重试'));
+      showError(error.message || t('淇濆瓨澶辫触锛岃閲嶈瘯'));
     } finally {
       setSaving(false);
     }
@@ -787,13 +787,13 @@ export const ClientCompatSettingsCard = ({ t }) => {
     <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
       <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4'>
         <div>
-          <Typography.Text strong>{t('客户端远端配置')}</Typography.Text>
+          <Typography.Text strong>{t('瀹㈡埛绔繙绔厤缃?)}</Typography.Text>
           <div className='text-xs text-gray-600 mt-1'>
-            {t('控制 AI Deployer 客户端启动时的停用提示、版本检查、更新地址与默认模型')}
+            {t('鎺у埗 AI Deployer 瀹㈡埛绔惎鍔ㄦ椂鐨勫仠鐢ㄦ彁绀恒€佺増鏈鏌ャ€佹洿鏂板湴鍧€涓庨粯璁ゆā鍨?)}
           </div>
         </div>
         <Button theme='solid' onClick={saveSettings} loading={saving} icon={<IconSave />}>
-          {t('保存配置')}
+          {t('淇濆瓨閰嶇疆')}
         </Button>
       </div>
 
@@ -808,15 +808,15 @@ export const ClientCompatSettingsCard = ({ t }) => {
             <Col span={24}>
               <Form.Switch
                 field='AIDeployerClientEnabled'
-                label={t('启用客户端服务')}
-                checkedText={t('开')}
-                uncheckedText={t('关')}
+                label={t('鍚敤瀹㈡埛绔湇鍔?)}
+                checkedText={t('寮€')}
+                uncheckedText={t('鍏?)}
               />
             </Col>
             <Col span={12}>
               <Form.Input
                 field='AIDeployerClientMinVersion'
-                label={t('最低版本')}
+                label={t('鏈€浣庣増鏈?)}
                 placeholder='1.0.5'
                 showClear
               />
@@ -824,7 +824,7 @@ export const ClientCompatSettingsCard = ({ t }) => {
             <Col span={12}>
               <Form.Input
                 field='AIDeployerClientLatestVersion'
-                label={t('最新版本')}
+                label={t('鏈€鏂扮増鏈?)}
                 placeholder='1.0.6'
                 showClear
               />
@@ -832,7 +832,7 @@ export const ClientCompatSettingsCard = ({ t }) => {
             <Col span={24}>
               <Form.Input
                 field='AIDeployerClientUpdateURL'
-                label={t('更新地址')}
+                label={t('鏇存柊鍦板潃')}
                 placeholder='https://your-domain.example/downloads/ai-deployer'
                 showClear
               />
@@ -840,16 +840,16 @@ export const ClientCompatSettingsCard = ({ t }) => {
             <Col span={24}>
               <Form.TextArea
                 field='AIDeployerClientNotice'
-                label={t('提示文案')}
+                label={t('鎻愮ず鏂囨')}
                 autosize={{ minRows: 3, maxRows: 6 }}
-                placeholder={t('例如：当前版本过旧，请升级后继续使用')}
+                placeholder={t('渚嬪锛氬綋鍓嶇増鏈繃鏃э紝璇峰崌绾у悗缁х画浣跨敤')}
                 showClear
               />
             </Col>
             <Col span={24} md={12}>
               <Form.Input
                 field='AIDeployerClientDefaultModel'
-                label={t('默认 Codex 模型')}
+                label={t('榛樿 Codex 妯″瀷')}
                 placeholder='gpt-5.3-codex'
                 showClear
               />
@@ -857,7 +857,7 @@ export const ClientCompatSettingsCard = ({ t }) => {
             <Col span={24} md={12}>
               <Form.Input
                 field='AIDeployerClientDefaultOCModel'
-                label={t('默认 OpenCode 模型')}
+                label={t('榛樿 OpenCode 妯″瀷')}
                 placeholder='openai/gpt-5.3-codex'
                 showClear
               />
@@ -865,7 +865,7 @@ export const ClientCompatSettingsCard = ({ t }) => {
             <Col span={24}>
               <Form.Input
                 field='AIDeployerClientDefaultSmallModel'
-                label={t('默认小模型')}
+                label={t('榛樿灏忔ā鍨?)}
                 placeholder='openai/gpt-4.1-mini'
                 showClear
               />
@@ -913,7 +913,7 @@ const ClientLicensesFilters = ({
           <Form.Input
             field='searchKeyword'
             prefix={<IconSearch />}
-            placeholder={t('关键字：ID / 卡密 / 名称')}
+            placeholder={t('鍏抽敭瀛楋細ID / 鍗″瘑 / 鍚嶇О')}
             showClear
             pure
             size='small'
@@ -927,7 +927,7 @@ const ClientLicensesFilters = ({
             className='flex-1 md:flex-initial md:w-auto'
             size='small'
           >
-            {t('查询')}
+            {t('鏌ヨ')}
           </Button>
           <Button
             type='tertiary'
@@ -935,7 +935,7 @@ const ClientLicensesFilters = ({
             className='flex-1 md:flex-initial md:w-auto'
             size='small'
           >
-            {t('重置')}
+            {t('閲嶇疆')}
           </Button>
         </div>
       </div>
@@ -960,7 +960,7 @@ const ClientLicensesActions = ({
   return (
     <div className='flex flex-wrap gap-2 w-full md:w-auto order-2 md:order-1'>
       <Button type='primary' className='flex-1 md:flex-initial' onClick={handleAdd} size='small'>
-        {t('添加客户端卡密')}
+        {t('娣诲姞瀹㈡埛绔崱瀵?)}
       </Button>
       <Button
         type='tertiary'
@@ -968,7 +968,7 @@ const ClientLicensesActions = ({
         onClick={batchCopyLicenses}
         size='small'
       >
-        {t('批量复制')}
+        {t('鎵归噺澶嶅埗')}
       </Button>
       <Button
         type='tertiary'
@@ -977,7 +977,7 @@ const ClientLicensesActions = ({
         size='small'
         icon={<IconDownload />}
       >
-        {t('批量导出')}
+        {t('鎵归噺瀵煎嚭')}
       </Button>
     </div>
   );
@@ -1006,13 +1006,13 @@ const DeleteClientLicenseModal = ({
 
   return (
     <Modal
-      title={t('确定是否要删除此客户端卡密？')}
+      title={t('纭畾鏄惁瑕佸垹闄ゆ瀹㈡埛绔崱瀵嗭紵')}
       visible={visible}
       onCancel={onCancel}
       onOk={handleConfirm}
       type='warning'
     >
-      {t('此修改将不可逆。')}
+      {t('姝や慨鏀瑰皢涓嶅彲閫嗐€?)}
     </Modal>
   );
 };
@@ -1116,18 +1116,18 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
     const { success, message } = res.data;
     if (success) {
       const generatedCodes = res.data?.data?.codes || [];
-      showSuccess(isEdit ? t('客户端卡密更新成功！') : t('客户端卡密创建成功！'));
+      showSuccess(isEdit ? t('瀹㈡埛绔崱瀵嗘洿鏂版垚鍔燂紒') : t('瀹㈡埛绔崱瀵嗗垱寤烘垚鍔燂紒'));
       await refresh();
       onClose();
 
       if (!isEdit && generatedCodes.length > 0) {
         const text = generatedCodes.join('\n');
         Modal.confirm({
-          title: t('客户端卡密创建成功'),
+          title: t('瀹㈡埛绔崱瀵嗗垱寤烘垚鍔?),
           content: (
             <div>
-              <p>{t('本次共生成 {{count}} 个卡密。', { count: generatedCodes.length })}</p>
-              <p>{t('是否下载卡密列表文件？')}</p>
+              <p>{t('鏈鍏辩敓鎴?{{count}} 涓崱瀵嗐€?, { count: generatedCodes.length })}</p>
+              <p>{t('鏄惁涓嬭浇鍗″瘑鍒楄〃鏂囦欢锛?)}</p>
             </div>
           ),
           onOk: () => {
@@ -1151,10 +1151,10 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
       title={
         <Space>
           <Tag color={isEdit ? 'blue' : 'green'} shape='circle'>
-            {isEdit ? t('更新') : t('新建')}
+            {isEdit ? t('鏇存柊') : t('鏂板缓')}
           </Tag>
           <Typography.Title heading={4} className='m-0'>
-            {isEdit ? t('更新客户端卡密') : t('创建新的客户端卡密')}
+            {isEdit ? t('鏇存柊瀹㈡埛绔崱瀵?) : t('鍒涘缓鏂扮殑瀹㈡埛绔崱瀵?)}
           </Typography.Title>
         </Space>
       }
@@ -1167,10 +1167,10 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
               icon={<IconSave />}
               loading={loading}
             >
-              {t('提交')}
+              {t('鎻愪氦')}
             </Button>
             <Button theme='light' type='primary' onClick={onClose} icon={<IconClose />}>
-              {t('取消')}
+              {t('鍙栨秷')}
             </Button>
           </Space>
         </div>
@@ -1196,9 +1196,9 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                     <IconKey size='small' />
                   </Avatar>
                   <div>
-                    <Typography.Text strong>{t('卡密信息')}</Typography.Text>
+                    <Typography.Text strong>{t('鍗″瘑淇℃伅')}</Typography.Text>
                     <div className='text-xs text-gray-600'>
-                      {t('配置卡密编码、批量生成规则与固定过期时间')}
+                      {t('閰嶇疆鍗″瘑缂栫爜銆佹壒閲忕敓鎴愯鍒欎笌鍥哄畾杩囨湡鏃堕棿')}
                     </div>
                   </div>
                 </div>
@@ -1206,8 +1206,8 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <Col span={24}>
                     <Form.Input
                       field='code'
-                      label={t('卡密')}
-                      placeholder={t('留空则自动生成；批量创建时必须留空')}
+                      label={t('鍗″瘑')}
+                      placeholder={t('鐣欑┖鍒欒嚜鍔ㄧ敓鎴愶紱鎵归噺鍒涘缓鏃跺繀椤荤暀绌?)}
                       showClear
                       extraText={
                         <Button
@@ -1221,7 +1221,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                             )
                           }
                         >
-                          {t('生成')}
+                          {t('鐢熸垚')}
                         </Button>
                       }
                     />
@@ -1229,17 +1229,17 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <Col span={24}>
                     <Form.Input
                       field='name'
-                      label={t('名称')}
-                      placeholder={t('例如 starter / trial / annual')}
+                      label={t('鍚嶇О')}
+                      placeholder={t('渚嬪 starter / trial / annual')}
                       showClear
                     />
                   </Col>
                   <Col span={24}>
                     <Form.DatePicker
                       field='expired_time'
-                      label={t('过期时间')}
+                      label={t('杩囨湡鏃堕棿')}
                       type='dateTime'
-                      placeholder={t('留空表示永不过期；如设置持续天数请留空')}
+                      placeholder={t('鐣欑┖琛ㄧず姘镐笉杩囨湡锛涘璁剧疆鎸佺画澶╂暟璇风暀绌?)}
                       disabled={(Number(values.duration_days) || 0) > 0 || (Number(values.subscription_plan_id) || 0) > 0}
                       style={{ width: '100%' }}
                       showClear
@@ -1250,7 +1250,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                       <Col span={12}>
                         <Form.InputNumber
                           field='batch_count'
-                          label={t('生成数量')}
+                          label={t('鐢熸垚鏁伴噺')}
                           min={1}
                           max={200}
                           style={{ width: '100%' }}
@@ -1259,11 +1259,11 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                       <Col span={12}>
                         <Form.InputNumber
                           field='code_length'
-                          label={t('随机长度')}
+                          label={t('闅忔満闀垮害')}
                           min={4}
                           max={32}
                           style={{ width: '100%' }}
-                          extraText={t('仅对自动生成卡密生效')}
+                          extraText={t('浠呭鑷姩鐢熸垚鍗″瘑鐢熸晥')}
                         />
                       </Col>
                     </>
@@ -1271,13 +1271,13 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <Col span={24}>
                     <Form.InputNumber
                       field='duration_days'
-                      label={t('持续天数')}
+                      label={t('鎸佺画澶╂暟')}
                       min={0}
                       disabled={(Number(values.subscription_plan_id) || 0) > 0}
                       style={{ width: '100%' }}
                       extraText={(Number(values.subscription_plan_id) || 0) > 0
-                        ? t('已选择订阅套餐时，这个持续天数字段不生效')
-                        : t('填 0 表示不用持续天数；大于 0 时从首次激活开始计时')}
+                        ? t('宸查€夋嫨璁㈤槄濂楅鏃讹紝杩欎釜鎸佺画澶╂暟瀛楁涓嶇敓鏁?)
+                        : t('濉?0 琛ㄧず涓嶇敤鎸佺画澶╂暟锛涘ぇ浜?0 鏃朵粠棣栨婵€娲诲紑濮嬭鏃?)}
                     />
                   </Col>
                 </Row>
@@ -1289,9 +1289,9 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                     <IconCreditCard size='small' />
                   </Avatar>
                   <div>
-                    <Typography.Text strong>{t('额度配置')}</Typography.Text>
+                    <Typography.Text strong>{t('棰濆害閰嶇疆')}</Typography.Text>
                     <div className='text-xs text-gray-600'>
-                      {t('控制卡密激活后生成的令牌额度与有效策略')}
+                      {t('鎺у埗鍗″瘑婵€娲诲悗鐢熸垚鐨勪护鐗岄搴︿笌鏈夋晥绛栫暐')}
                     </div>
                   </div>
                 </div>
@@ -1299,8 +1299,8 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <Col span={24}>
                     <Form.Select
                       field='subscription_plan_id'
-                      label={t('订阅套餐')}
-                      placeholder={plansLoading ? t('加载套餐中...') : t('不选则为普通额度卡')}
+                      label={t('璁㈤槄濂楅')}
+                      placeholder={plansLoading ? t('鍔犺浇濂楅涓?..') : t('涓嶉€夊垯涓烘櫘閫氶搴﹀崱')}
                       style={{ width: '100%' }}
                       optionList={(subscriptionPlans || []).map((item) => ({
                         label: buildSubscriptionPlanOptionLabel(item, t),
@@ -1310,19 +1310,19 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                     />
                     {selectedSubscriptionPlan ? (
                       <div className='mt-2 text-xs text-gray-600 rounded-xl bg-gray-50 px-3 py-2 border border-gray-200'>
-                        <div>{selectedSubscriptionPlan?.plan?.subtitle || t('璁㈤槄鍗″皢鎸夋濂楅寮€閫氾紝棰濆害涓庡埌鏈熸椂闂翠互濂楅涓哄噯')}</div>
+                        <div>{selectedSubscriptionPlan?.plan?.subtitle || t('鐠併垽妲勯崡鈥崇殺閹稿顒濇總妤咁樀瀵偓闁熬绱濇０婵嗗娑撳骸鍩岄張鐔告闂傜繝浜掓總妤咁樀娑撳搫鍣?)}</div>
                         <div className='mt-1'>
-                          {t('浠锋牸')}：${Number(selectedSubscriptionPlan?.plan?.price_amount || 0).toFixed(2)} ·
-                          {' '}{t('鏈夋晥鏈?)}：{formatSubscriptionDuration(
+                          {t('娴犻攱鐗?)}锛?{Number(selectedSubscriptionPlan?.plan?.price_amount || 0).toFixed(2)} 路
+                          {' '}{t('閺堝鏅ラ張?)}锛歿formatSubscriptionDuration(
                             {
                               subscription_duration_unit: selectedSubscriptionPlan?.plan?.duration_unit,
                               subscription_duration_value: selectedSubscriptionPlan?.plan?.duration_value,
                               subscription_custom_seconds: selectedSubscriptionPlan?.plan?.custom_seconds,
                             },
                             t,
-                          )} ·
-                          {' '}{t('鎬婚搴?)}：{formatSubscriptionTotalAmount(selectedSubscriptionPlan?.plan?.total_amount, t)} ·
-                          {' '}{t('閲嶇疆')}：{formatSubscriptionResetPeriod(
+                          )} 路
+                          {' '}{t('閹顤傛惔?)}锛歿formatSubscriptionTotalAmount(selectedSubscriptionPlan?.plan?.total_amount, t)} 路
+                          {' '}{t('闁插秶鐤?)}锛歿formatSubscriptionResetPeriod(
                             {
                               subscription_quota_reset_period: selectedSubscriptionPlan?.plan?.quota_reset_period,
                               subscription_quota_reset_custom_seconds:
@@ -1337,23 +1337,23 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <Col span={24}>
                     <Form.Switch
                       field='unlimited_quota'
-                      label={t('无限额度')}
-                      checkedText={t('开')}
-                      uncheckedText={t('关')}
+                      label={t('鏃犻檺棰濆害')}
+                      checkedText={t('寮€')}
+                      uncheckedText={t('鍏?)}
                       disabled={(Number(values.subscription_plan_id) || 0) > 0}
                     />
                   </Col>
                   <Col span={24}>
                     <Form.InputNumber
                       field='quota'
-                      label={t('额度（USD）')}
+                      label={t('棰濆害锛圲SD锛?)}
                       min={0}
                       precision={2}
                       disabled={values.unlimited_quota || (Number(values.subscription_plan_id) || 0) > 0}
                       style={{ width: '100%' }}
                       extraText={(Number(values.subscription_plan_id) || 0) > 0
-                        ? t('已选择订阅套餐时，这个额度字段不生效')
-                        : `${t('按美元填写，保存时自动换算为原生额度')} · ${t('原生额度')}：${usdAmountToQuota(
+                        ? t('宸查€夋嫨璁㈤槄濂楅鏃讹紝杩欎釜棰濆害瀛楁涓嶇敓鏁?)
+                        : `${t('鎸夌編鍏冨～鍐欙紝淇濆瓨鏃惰嚜鍔ㄦ崲绠椾负鍘熺敓棰濆害')} 路 ${t('鍘熺敓棰濆害')}锛?{usdAmountToQuota(
                             values.quota,
                           )}`}
                     />
@@ -1367,9 +1367,9 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                     <IconKey size='small' />
                   </Avatar>
                   <div>
-                    <Typography.Text strong>{t('设备绑定')}</Typography.Text>
+                    <Typography.Text strong>{t('璁惧缁戝畾')}</Typography.Text>
                     <div className='text-xs text-gray-600'>
-                      {t('可选：手动维护设备哈希，用于锁定或释放指定设备')}
+                      {t('鍙€夛細鎵嬪姩缁存姢璁惧鍝堝笇锛岀敤浜庨攣瀹氭垨閲婃斁鎸囧畾璁惧')}
                     </div>
                   </div>
                 </div>
@@ -1377,8 +1377,8 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <Col span={24}>
                     <Form.Input
                       field='device_hash'
-                      label={t('设备哈希')}
-                      placeholder={t('留空表示未绑定设备')}
+                      label={t('璁惧鍝堝笇')}
+                      placeholder={t('鐣欑┖琛ㄧず鏈粦瀹氳澶?)}
                       showClear
                     />
                   </Col>
@@ -1416,7 +1416,7 @@ const ClientLicensesTable = ({
     () => [
       { title: t('ID'), dataIndex: 'id' },
       {
-        title: t('卡密'),
+        title: t('鍗″瘑'),
         dataIndex: 'code',
         render: (text) => (
           <Popover content={text} position='top'>
@@ -1427,12 +1427,12 @@ const ClientLicensesTable = ({
         ),
       },
       {
-        title: t('名称'),
+        title: t('鍚嶇О'),
         dataIndex: 'name',
         render: (text, record) => text || record.code,
       },
       {
-        title: t('激活状态'),
+        title: t('婵€娲荤姸鎬?),
         dataIndex: 'activated_time',
         render: (text, record) => {
           const config = activationTag(record, t);
@@ -1444,7 +1444,7 @@ const ClientLicensesTable = ({
         },
       },
       {
-        title: t('卡密状态'),
+        title: t('鍗″瘑鐘舵€?),
         dataIndex: 'status',
         render: (text, record) => {
           const config = statusTag(record, t);
@@ -1456,12 +1456,12 @@ const ClientLicensesTable = ({
         },
       },
       {
-        title: t('额度（USD）'),
+        title: t('棰濆害锛圲SD锛?),
         dataIndex: 'quota',
         render: (text, record) =>
           record.unlimited_quota ? (
             <Tag color='green' shape='circle'>
-              {t('无限额度')}
+              {t('鏃犻檺棰濆害')}
             </Tag>
           ) : (
             <Tag color='grey' shape='circle'>
@@ -1470,26 +1470,26 @@ const ClientLicensesTable = ({
           ),
       },
       {
-        title: t('绑定设备'),
+        title: t('缁戝畾璁惧'),
         dataIndex: 'device_hash',
         render: (text) => (
-          <Popover content={text || t('未绑定')} position='top'>
+          <Popover content={text || t('鏈粦瀹?)} position='top'>
             <span>{maskText(text)}</span>
           </Popover>
         ),
       },
       {
-        title: t('关联令牌'),
+        title: t('鍏宠仈浠ょ墝'),
         dataIndex: 'token_id',
         render: (text) => text || '-',
       },
       {
-        title: t('归属用户'),
+        title: t('褰掑睘鐢ㄦ埛'),
         dataIndex: 'user_id',
         render: (text) => text || '-',
       },
       {
-        title: t('订阅计划'),
+        title: t('璁㈤槄璁″垝'),
         dataIndex: 'subscription_plan_title',
         render: (text, record) =>
           record.subscription_plan_id ? (
@@ -1498,10 +1498,10 @@ const ClientLicensesTable = ({
               content={
                 <div>
                   <div>{text || `#${record.subscription_plan_id}`}</div>
-                  <div>{t('浠锋牸')}：${Number(record.subscription_price_amount || 0).toFixed(2)}</div>
-                  <div>{t('鏈夋晥鏈?)}：{formatSubscriptionDuration(record, t)}</div>
-                  <div>{t('总额度')}：{record.subscription_amount_total > 0 ? formatUsdQuota(record.subscription_amount_total) : t('不限')}</div>
-                  <div>{t('重置')}：{formatSubscriptionResetPeriod(record, t)}</div>
+                  <div>{t('娴犻攱鐗?)}锛?{Number(record.subscription_price_amount || 0).toFixed(2)}</div>
+                  <div>{t('閺堝鏅ラ張?)}锛歿formatSubscriptionDuration(record, t)}</div>
+                  <div>{t('鎬婚搴?)}锛歿record.subscription_amount_total > 0 ? formatUsdQuota(record.subscription_amount_total) : t('涓嶉檺')}</div>
+                  <div>{t('閲嶇疆')}锛歿formatSubscriptionResetPeriod(record, t)}</div>
                 </div>
               }
             >
@@ -1514,7 +1514,7 @@ const ClientLicensesTable = ({
           ),
       },
       {
-        title: t('订阅状态'),
+        title: t('璁㈤槄鐘舵€?),
         dataIndex: 'user_subscription_status',
         render: (text, record) =>
           record.subscription_plan_id ? (
@@ -1539,37 +1539,37 @@ const ClientLicensesTable = ({
           ),
       },
       {
-        title: t('下次重置'),
+        title: t('涓嬫閲嶇疆'),
         dataIndex: 'subscription_next_reset_time',
         render: (text, record) =>
           record.subscription_plan_id
             ? record.user_subscription_id
-              ? formatTime(text, t, '未设置')
-              : t('待激活')
+              ? formatTime(text, t, '鏈缃?)
+              : t('寰呮縺娲?)
             : '-',
       },
       {
-        title: t('创建时间'),
+        title: t('鍒涘缓鏃堕棿'),
         dataIndex: 'created_time',
         render: (text) => formatTime(text, t),
       },
       {
-        title: t('激活时间'),
+        title: t('婵€娲绘椂闂?),
         dataIndex: 'activated_time',
         render: (text) => formatTime(text, t),
       },
       {
-        title: t('最近兑换'),
+        title: t('鏈€杩戝厬鎹?),
         dataIndex: 'last_redeem_time',
         render: (text) => formatTime(text, t),
       },
       {
-        title: t('时长(天)'),
+        title: t('鏃堕暱(澶?'),
         dataIndex: 'duration_days',
         render: (text) => (text && text > 0 ? `${text}d` : '-'),
       },
       {
-        title: t('实际到期'),
+        title: t('瀹為檯鍒版湡'),
         dataIndex: 'expired_time',
         render: (text, record) => formatExpires(record, t),
       },
@@ -1582,7 +1582,7 @@ const ClientLicensesTable = ({
           const moreMenuItems = [
             {
               node: 'item',
-              name: t('删除'),
+              name: t('鍒犻櫎'),
               type: 'danger',
               onClick: () => {
                 setDeletingRecord(record);
@@ -1594,14 +1594,14 @@ const ClientLicensesTable = ({
           if (record.status === CLIENT_LICENSE_STATUS.ACTIVE && !isExpired(record)) {
             moreMenuItems.push({
               node: 'item',
-              name: t('禁用'),
+              name: t('绂佺敤'),
               type: 'warning',
               onClick: () => manageLicense(record, CLIENT_LICENSE_ACTIONS.DISABLE),
             });
           } else if (!isExpired(record)) {
             moreMenuItems.push({
               node: 'item',
-              name: t('启用'),
+              name: t('鍚敤'),
               onClick: () => manageLicense(record, CLIENT_LICENSE_ACTIONS.ENABLE),
             });
           }
@@ -1609,7 +1609,7 @@ const ClientLicensesTable = ({
           return (
             <Space>
               <Button size='small' onClick={() => copyText(record.code)}>
-                {t('复制')}
+                {t('澶嶅埗')}
               </Button>
               <Button
                 type='tertiary'
@@ -1619,7 +1619,7 @@ const ClientLicensesTable = ({
                   setShowEdit(true);
                 }}
               >
-                {t('编辑')}
+                {t('缂栬緫')}
               </Button>
               <Dropdown trigger='click' position='bottomRight' menu={moreMenuItems}>
                 <Button type='tertiary' size='small' icon={<IconMore />} />
@@ -1668,7 +1668,7 @@ const ClientLicensesTable = ({
         <Empty
           image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
           darkModeImage={<IllustrationNoResultDark style={{ width: 150, height: 150 }} />}
-          description={t('暂无客户端卡密')}
+          description={t('鏆傛棤瀹㈡埛绔崱瀵?)}
           style={{ padding: 30 }}
         />
       }
@@ -1744,7 +1744,7 @@ const ClientLicensesPage = () => {
                 window.location.href = '/console/client-remote-config';
               }}
             >
-              {data.t('客户端远端配置')}
+              {data.t('瀹㈡埛绔繙绔厤缃?)}
             </Button>
             <div className='hidden'>
               <Button
@@ -1753,7 +1753,7 @@ const ClientLicensesPage = () => {
                 disabled={data.selectedRows.length === 0}
                 onClick={() => data.batchManageLicenses(CLIENT_LICENSE_ACTIONS.ENABLE)}
               >
-                {data.t('批量启用')}
+                {data.t('鎵归噺鍚敤')}
               </Button>
               <Button
                 type='tertiary'
@@ -1761,7 +1761,7 @@ const ClientLicensesPage = () => {
                 disabled={data.selectedRows.length === 0}
                 onClick={() => data.batchManageLicenses(CLIENT_LICENSE_ACTIONS.DISABLE)}
               >
-                {data.t('批量禁用')}
+                {data.t('鎵归噺绂佺敤')}
               </Button>
               <Button
                 type='tertiary'
@@ -1769,7 +1769,7 @@ const ClientLicensesPage = () => {
                 disabled={data.selectedRows.length === 0}
                 onClick={() => data.batchManageLicenses(CLIENT_LICENSE_ACTIONS.DELETE)}
               >
-                {data.t('批量删除')}
+                {data.t('鎵归噺鍒犻櫎')}
               </Button>
             </div>
             <div className='w-full md:w-full lg:w-auto order-1 md:order-2'>
