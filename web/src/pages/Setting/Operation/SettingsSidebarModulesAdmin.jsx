@@ -159,7 +159,8 @@ export default function SettingsSidebarModulesAdmin(props) {
           },
         });
 
-        // 鍒锋柊鐖剁粍浠剁姸鎬?        if (props.refresh) {
+        // 刷新父组件状态
+        if (props.refresh) {
           await props.refresh();
         }
       } else {
@@ -173,7 +174,8 @@ export default function SettingsSidebarModulesAdmin(props) {
   }
 
   useEffect(() => {
-    // 浠?props.options 涓幏鍙栭厤缃?    if (props.options && props.options.SidebarModulesAdmin) {
+    // 从 props.options 中获取配置
+    if (props.options && props.options.SidebarModulesAdmin) {
       try {
         const modules = JSON.parse(props.options.SidebarModulesAdmin);
         setSidebarModulesAdmin((prev) => ({
