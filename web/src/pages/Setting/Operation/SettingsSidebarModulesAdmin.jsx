@@ -38,7 +38,8 @@ export default function SettingsSidebarModulesAdmin(props) {
   const [loading, setLoading] = useState(false);
   const [statusState, statusDispatch] = useContext(StatusContext);
 
-  // 宸︿晶杈规爮妯″潡绠＄悊鐘舵€侊紙绠＄悊鍛樺叏灞€鎺у埗锛?  const [sidebarModulesAdmin, setSidebarModulesAdmin] = useState({
+  // 左侧边栏模块管理状态（管理员全局控制）
+  const [sidebarModulesAdmin, setSidebarModulesAdmin] = useState({
     chat: {
       enabled: true,
       playground: true,
@@ -71,7 +72,8 @@ export default function SettingsSidebarModulesAdmin(props) {
     },
   });
 
-  // 澶勭悊鍖哄煙绾у埆寮€鍏冲彉鏇?  function handleSectionChange(sectionKey) {
+  // 处理区域级别开关变更
+  function handleSectionChange(sectionKey) {
     return (checked) => {
       const newModules = {
         ...sidebarModulesAdmin,
@@ -84,7 +86,8 @@ export default function SettingsSidebarModulesAdmin(props) {
     };
   }
 
-  // 澶勭悊鍔熻兘绾у埆寮€鍏冲彉鏇?  function handleModuleChange(sectionKey, moduleKey) {
+  // 处理功能级别开关变更
+  function handleModuleChange(sectionKey, moduleKey) {
     return (checked) => {
       const newModules = {
         ...sidebarModulesAdmin,
@@ -132,7 +135,7 @@ export default function SettingsSidebarModulesAdmin(props) {
       },
     };
     setSidebarModulesAdmin(defaultModules);
-    showSuccess(t('宸查噸缃负榛樿閰嶇疆'));
+    showSuccess(t('已重置为默认配置'));
   }
 
   // 淇濆瓨閰嶇疆
@@ -182,7 +185,7 @@ export default function SettingsSidebarModulesAdmin(props) {
           admin: { ...prev.admin, ...(modules.admin || {}) },
         }));
       } catch (error) {
-        // 浣跨敤榛樿閰嶇疆
+        // 使用默认配置
         const defaultModules = {
           chat: { enabled: true, playground: true, chat: true },
           console: {
@@ -216,57 +219,57 @@ export default function SettingsSidebarModulesAdmin(props) {
   const sectionConfigs = [
     {
       key: 'chat',
-      title: t('鑱婂ぉ鍖哄煙'),
-      description: t('鎿嶇粌鍦哄拰鑱婂ぉ鍔熻兘'),
+      title: t('聊天区域'),
+      description: t('操练场和聊天功能'),
       modules: [
         {
           key: 'playground',
-          title: t('鎿嶇粌鍦?),
-          description: t('AI妯″瀷娴嬭瘯鐜'),
+          title: t('操练场'),
+          description: t('AI 模型测试环境'),
         },
-        { key: 'chat', title: t('鑱婂ぉ'), description: t('鑱婂ぉ浼氳瘽绠＄悊') },
+        { key: 'chat', title: t('聊天'), description: t('聊天会话管理') },
       ],
     },
     {
       key: 'console',
-      title: t('鎺у埗鍙板尯鍩?),
-      description: t('鏁版嵁绠＄悊鍜屾棩蹇楁煡鐪?),
+      title: t('控制台区域'),
+      description: t('数据管理和日志查看'),
       modules: [
-        { key: 'detail', title: t('鏁版嵁鐪嬫澘'), description: t('绯荤粺鏁版嵁缁熻') },
-        { key: 'token', title: t('浠ょ墝绠＄悊'), description: t('API浠ょ墝绠＄悊') },
-        { key: 'log', title: t('浣跨敤鏃ュ織'), description: t('API浣跨敤璁板綍') },
+        { key: 'detail', title: t('数据看板'), description: t('系统数据统计') },
+        { key: 'token', title: t('令牌管理'), description: t('API 令牌管理') },
+        { key: 'log', title: t('使用日志'), description: t('API 使用记录') },
         {
           key: 'midjourney',
-          title: t('缁樺浘鏃ュ織'),
-          description: t('缁樺浘浠诲姟璁板綍'),
+          title: t('绘图日志'),
+          description: t('绘图任务记录'),
         },
-        { key: 'task', title: t('浠诲姟鏃ュ織'), description: t('绯荤粺浠诲姟璁板綍') },
+        { key: 'task', title: t('任务日志'), description: t('系统任务记录') },
       ],
     },
     {
       key: 'personal',
-      title: t('涓汉涓績鍖哄煙'),
-      description: t('鐢ㄦ埛涓汉鍔熻兘'),
+      title: t('个人中心区域'),
+      description: t('用户个人功能'),
       modules: [
-        { key: 'topup', title: t('閽卞寘绠＄悊'), description: t('浣欓鍏呭€肩鐞?) },
+        { key: 'topup', title: t('钱包管理'), description: t('余额充值管理') },
         {
           key: 'personal',
-          title: t('涓汉璁剧疆'),
-          description: t('涓汉淇℃伅璁剧疆'),
+          title: t('个人设置'),
+          description: t('个人信息设置'),
         },
       ],
     },
     {
       key: 'admin',
-      title: t('绠＄悊鍛樺尯鍩?),
-      description: t('绯荤粺绠＄悊鍔熻兘'),
+      title: t('管理员区域'),
+      description: t('系统管理功能'),
       modules: [
-        { key: 'channel', title: t('娓犻亾绠＄悊'), description: t('API娓犻亾閰嶇疆') },
-        { key: 'models', title: t('妯″瀷绠＄悊'), description: t('AI妯″瀷閰嶇疆') },
+        { key: 'channel', title: t('渠道管理'), description: t('API 渠道配置') },
+        { key: 'models', title: t('模型管理'), description: t('AI 模型配置') },
         {
           key: 'deployment',
-          title: t('妯″瀷閮ㄧ讲'),
-          description: t('妯″瀷閮ㄧ讲绠＄悊'),
+          title: t('模型部署'),
+          description: t('模型部署管理'),
         },
         {
           key: 'subscription',
@@ -301,14 +304,14 @@ export default function SettingsSidebarModulesAdmin(props) {
   return (
     <Card>
       <Form.Section
-        text={t('渚ц竟鏍忕鐞嗭紙鍏ㄥ眬鎺у埗锛?)}
+        text={t('侧边栏管理（全局控制）')}
         extraText={t(
-          '鍏ㄥ眬鎺у埗渚ц竟鏍忓尯鍩熷拰鍔熻兘鏄剧ず锛岀鐞嗗憳闅愯棌鐨勫姛鑳界敤鎴锋棤娉曞惎鐢?,
+          '全局控制侧边栏区域和功能显示，管理员隐藏的功能用户无法启用',
         )}
       >
         {sectionConfigs.map((section) => (
           <div key={section.key} style={{ marginBottom: '32px' }}>
-            {/* 鍖哄煙鏍囬鍜屾€诲紑鍏?*/}
+            {/* 区域标题和总开关 */}
             <div
               style={{
                 display: 'flex',

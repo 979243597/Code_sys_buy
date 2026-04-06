@@ -73,7 +73,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const workspaceItems = useMemo(() => {
     const items = [
       {
-        text: t('鏁版嵁鐪嬫澘'),
+        text: t('数据看板'),
         itemKey: 'detail',
         to: '/detail',
         className:
@@ -82,17 +82,17 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             : 'tableHiddle',
       },
       {
-        text: t('浠ょ墝绠＄悊'),
+        text: t('令牌管理'),
         itemKey: 'token',
         to: '/token',
       },
       {
-        text: t('浣跨敤鏃ュ織'),
+        text: t('使用日志'),
         itemKey: 'log',
         to: '/log',
       },
       {
-        text: t('缁樺浘鏃ュ織'),
+        text: t('绘图日志'),
         itemKey: 'midjourney',
         to: '/midjourney',
         className:
@@ -101,7 +101,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             : 'tableHiddle',
       },
       {
-        text: t('浠诲姟鏃ュ織'),
+        text: t('任务日志'),
         itemKey: 'task',
         to: '/task',
         className:
@@ -127,12 +127,12 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const financeItems = useMemo(() => {
     const items = [
       {
-        text: t('閽卞寘绠＄悊'),
+        text: t('钱包管理'),
         itemKey: 'topup',
         to: '/topup',
       },
       {
-        text: t('涓汉璁剧疆'),
+        text: t('个人设置'),
         itemKey: 'personal',
         to: '/personal',
       },
@@ -150,7 +150,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const adminItems = useMemo(() => {
     const items = [
       {
-        text: t('娓犻亾绠＄悊'),
+        text: t('渠道管理'),
         itemKey: 'channel',
         to: '/channel',
         className: isAdmin() ? '' : 'tableHiddle',
@@ -162,13 +162,13 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
-        text: t('妯″瀷绠＄悊'),
+        text: t('模型管理'),
         itemKey: 'models',
         to: '/console/models',
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
-        text: t('妯″瀷閮ㄧ讲'),
+        text: t('模型部署'),
         itemKey: 'deployment',
         to: '/deployment',
         className: isAdmin() ? '' : 'tableHiddle',
@@ -478,20 +478,20 @@ const SiderBar = ({ onNavigate = () => {} }) => {
               <Divider className='sidebar-divider' />
               <div>
                 {!collapsed && (
-                  <div className='sidebar-group-label'>{t('涓汉涓績')}</div>
+                  <div className='sidebar-group-label'>{t('个人中心')}</div>
                 )}
                 {financeItems.map((item) => renderNavItem(item))}
               </div>
             </>
           )}
 
-          {/* 绠＄悊鍛樺尯鍩?- 鍙湪绠＄悊鍛樻椂鏄剧ず涓旈厤缃厑璁告椂鏄剧ず */}
+          {/* 管理员区域：只在管理员且侧边栏配置允许时显示 */}
           {isAdmin() && hasSectionVisibleModules('admin') && (
             <>
               <Divider className='sidebar-divider' />
               <div>
                 {!collapsed && (
-                  <div className='sidebar-group-label'>{t('绠＄悊鍛?)}</div>
+                  <div className='sidebar-group-label'>{t('管理员')}</div>
                 )}
                 {adminItems.map((item) => renderNavItem(item))}
               </div>

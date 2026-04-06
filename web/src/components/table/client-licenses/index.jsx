@@ -849,7 +849,7 @@ export const ClientCompatSettingsCard = ({ t }) => {
             <Col span={24} md={12}>
               <Form.Input
                 field='AIDeployerClientDefaultModel'
-                label={t('榛樿 Codex 妯″瀷')}
+                label={t('默认 Codex 模型')}
                 placeholder='gpt-5.3-codex'
                 showClear
               />
@@ -857,7 +857,7 @@ export const ClientCompatSettingsCard = ({ t }) => {
             <Col span={24} md={12}>
               <Form.Input
                 field='AIDeployerClientDefaultOCModel'
-                label={t('榛樿 OpenCode 妯″瀷')}
+                label={t('默认 OpenCode 模型')}
                 placeholder='openai/gpt-5.3-codex'
                 showClear
               />
