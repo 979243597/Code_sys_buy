@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2025 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
@@ -50,10 +50,10 @@ const { Text, Title } = Typography;
 
 const durationUnitOptions = [
   { value: 'year', label: '年' },
-  { value: 'month', label: '月' },
-  { value: 'day', label: '日' },
+  { value: 'month', label: '个月' },
+  { value: 'day', label: '天' },
   { value: 'hour', label: '小时' },
-  { value: 'custom', label: '自定义(秒)' },
+  { value: 'custom', label: '自定义秒数' },
 ];
 
 const resetPeriodOptions = [
@@ -61,7 +61,7 @@ const resetPeriodOptions = [
   { value: 'daily', label: '每天' },
   { value: 'weekly', label: '每周' },
   { value: 'monthly', label: '每月' },
-  { value: 'custom', label: '自定义(秒)' },
+  { value: 'custom', label: '自定义秒数' },
 ];
 
 const AddEditSubscriptionModal = ({
@@ -124,6 +124,33 @@ const AddEditSubscriptionModal = ({
       stripe_price_id: p.stripe_price_id || '',
       creem_product_id: p.creem_product_id || '',
     };
+  };
+
+  const buildSmartTitle = (values) => {
+    const durationUnitMap = {
+      year: '年',
+      month: '个月',
+      day: '天',
+      hour: '小时',
+    };
+    const duration =
+      values.duration_unit === 'custom'
+        ? `${Number(values.custom_seconds || 0)}秒`
+        : `${Number(values.duration_value || 0)}${durationUnitMap[values.duration_unit] || ''}`;
+    const totalAmount =
+      Number(values.total_amount || 0) > 0
+        ? `$${Number(values.total_amount || 0).toFixed(2)}`
+        : '不限额';
+    const resetMap = {
+      never: '不重置',
+      daily: '每天重置',
+      weekly: '每周重置',
+      monthly: '每月重置',
+      custom: `${Number(values.quota_reset_custom_seconds || 0)}秒重置`,
+    };
+    return [duration, totalAmount, resetMap[values.quota_reset_period] || '不重置']
+      .filter(Boolean)
+      .join(' · ');
   };
 
   useEffect(() => {
@@ -252,7 +279,7 @@ const AddEditSubscriptionModal = ({
           >
             {({ values }) => (
               <div className='p-2'>
-                {/* 基本信息 */}
+                {/* 鍩烘湰淇℃伅 */}
                 <Card className='!rounded-2xl shadow-sm border-0 mb-4'>
                   <div className='flex items-center mb-2'>
                     <Avatar
@@ -284,6 +311,18 @@ const AddEditSubscriptionModal = ({
                         ]}
                         showClear
                       />
+                    </Col>
+                    <Col span={24}>
+                      <Button
+                        type='tertiary'
+                        size='small'
+                        icon={<IconSave />}
+                        onClick={() =>
+                          formApiRef.current?.setValue('title', buildSmartTitle(values))
+                        }
+                      >
+                        {t('智能生成套餐名称')}
+                      </Button>
                     </Col>
 
                     <Col span={24}>
@@ -330,7 +369,7 @@ const AddEditSubscriptionModal = ({
                         loading={groupLoading}
                         placeholder={t('不升级')}
                         extraText={t(
-                          '购买或手动新增订阅会升级到该分组；当套餐失效/过期或手动作废/删除后，将回退到升级前分组。回退不会立即生效，通常会有几分钟延迟。',
+                          '购买或手动新增订阅会升级到该分组；当套餐失效、过期或手动作废/删除后，将回退到升级前分组。回退不会立即生效，通常会有几分钟延迟。',
                         )}
                       >
                         <Select.Option value=''>{t('不升级')}</Select.Option>
@@ -347,7 +386,7 @@ const AddEditSubscriptionModal = ({
                         field='currency'
                         label={t('币种')}
                         disabled
-                        extraText={t('由全站货币展示设置统一控制')}
+                        extraText={t('由全站货币显示设置统一控制')}
                       />
                     </Col>
 
@@ -501,7 +540,7 @@ const AddEditSubscriptionModal = ({
                   </Row>
                 </Card>
 
-                {/* 第三方支付配置 */}
+                {/* 绗笁鏂规敮浠橀厤缃?*/}
                 <Card className='!rounded-2xl shadow-sm border-0 mb-4'>
                   <div className='flex items-center mb-2'>
                     <Avatar
@@ -516,7 +555,7 @@ const AddEditSubscriptionModal = ({
                         {t('第三方支付配置')}
                       </Text>
                       <div className='text-xs text-gray-600'>
-                        {t('Stripe/Creem 商品ID（可选）')}
+                        {t('Stripe / Creem 商品 ID（可选）')}
                       </div>
                     </div>
                   </div>
@@ -551,3 +590,7 @@ const AddEditSubscriptionModal = ({
 };
 
 export default AddEditSubscriptionModal;
+
+
+
+

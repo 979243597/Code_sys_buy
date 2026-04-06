@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2025 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
@@ -42,6 +42,7 @@ const SubscriptionsPage = () => {
     closeEdit,
     refresh,
     openCreate,
+    deletePlan,
     compactMode,
     setCompactMode,
     t,
@@ -75,7 +76,7 @@ const SubscriptionsPage = () => {
             </div>
             <Banner
               type='info'
-              description={t('Stripe/Creem 需在第三方平台创建商品并填入 ID')}
+              description={t('Stripe / Creem 需要在第三方平台创建商品并填写对应 ID')}
               closeIcon={null}
               // Mobile: banner below; Desktop: banner right
               className='!rounded-lg order-2 md:order-1'
@@ -94,10 +95,11 @@ const SubscriptionsPage = () => {
         })}
         t={t}
       >
-        <SubscriptionsTable {...subscriptionsData} enableEpay={enableEpay} />
+        <SubscriptionsTable {...subscriptionsData} deletePlan={deletePlan} enableEpay={enableEpay} />
       </CardPro>
     </>
   );
 };
 
 export default SubscriptionsPage;
+

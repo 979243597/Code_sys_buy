@@ -277,6 +277,51 @@ func AdminUpdateSubscriptionPlanStatus(c *gin.Context) {
 	common.ApiSuccess(c, nil)
 }
 
+func AdminDeleteSubscriptionPlan(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id <= 0 {
+		common.ApiErrorMsg(c, "无效的 ID")
+		return
+	}
+
+	var subscriptionCount int64
+	if err := model.DB.Model(&model.UserSubscription{}).Where("plan_id = ?", id).Count(&subscriptionCount).Error; err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if subscriptionCount > 0 {
+		common.ApiErrorMsg(c, "该套餐已被订阅记录使用，不能删除")
+		return
+	}
+
+	var clientLicenseCount int64
+	if err := model.DB.Model(&model.ClientLicense{}).Where("subscription_plan_id = ?", id).Count(&clientLicenseCount).Error; err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if clientLicenseCount > 0 {
+		common.ApiErrorMsg(c, "该套餐已被客户端卡密绑定，不能删除")
+		return
+	}
+
+	var orderCount int64
+	if err := model.DB.Model(&model.SubscriptionOrder{}).Where("plan_id = ?", id).Count(&orderCount).Error; err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if orderCount > 0 {
+		common.ApiErrorMsg(c, "该套餐已有历史订单，不能删除")
+		return
+	}
+
+	if err := model.DB.Delete(&model.SubscriptionPlan{}, "id = ?", id).Error; err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	model.InvalidateSubscriptionPlanCache(id)
+	common.ApiSuccess(c, nil)
+}
+
 type AdminBindSubscriptionRequest struct {
 	UserId int `json:"user_id"`
 	PlanId int `json:"plan_id"`

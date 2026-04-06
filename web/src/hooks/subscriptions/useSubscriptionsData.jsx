@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2025 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
@@ -52,10 +52,10 @@ export const useSubscriptionsData = () => {
         const totalPages = Math.max(1, Math.ceil(next.length / pageSize));
         setActivePage((p) => Math.min(p || 1, totalPages));
       } else {
-        showError(res.data?.message || t('加载失败'));
+        showError(res.data?.message || t('鍔犺浇澶辫触'));
       }
     } catch (e) {
-      showError(t('请求失败'));
+      showError(t('璇锋眰澶辫触'));
     } finally {
       setLoading(false);
     }
@@ -92,6 +92,28 @@ export const useSubscriptionsData = () => {
         await loadPlans();
       } else {
         showError(res.data?.message || t('操作失败'));
+      }
+    } catch (e) {
+      showError(t('请求失败'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deletePlan = async (planRecordOrId) => {
+    const planId =
+      typeof planRecordOrId === 'number'
+        ? planRecordOrId
+        : planRecordOrId?.plan?.id;
+    if (!planId) return;
+    setLoading(true);
+    try {
+      const res = await API.delete(`/api/subscription/admin/plans/${planId}`);
+      if (res.data?.success) {
+        showSuccess(t('删除成功'));
+        await loadPlans();
+      } else {
+        showError(res.data?.message || t('删除失败'));
       }
     } catch (e) {
       showError(t('请求失败'));
@@ -155,6 +177,7 @@ export const useSubscriptionsData = () => {
     // Actions
     loadPlans,
     setPlanEnabled,
+    deletePlan,
     refresh,
     closeEdit,
     openCreate,
@@ -164,3 +187,4 @@ export const useSubscriptionsData = () => {
     t,
   };
 };
+

@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2025 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
@@ -33,6 +33,7 @@ const SubscriptionsTable = (subscriptionsData) => {
     compactMode,
     openEdit,
     setPlanEnabled,
+    deletePlan,
     t,
     enableEpay,
   } = subscriptionsData;
@@ -42,9 +43,10 @@ const SubscriptionsTable = (subscriptionsData) => {
       t,
       openEdit,
       setPlanEnabled,
+      deletePlan,
       enableEpay,
     });
-  }, [t, openEdit, setPlanEnabled, enableEpay]);
+  }, [t, openEdit, setPlanEnabled, deletePlan, enableEpay]);
 
   const tableColumns = useMemo(() => {
     return compactMode
@@ -84,3 +86,4 @@ const SubscriptionsTable = (subscriptionsData) => {
 };
 
 export default SubscriptionsTable;
+

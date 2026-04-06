@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2025 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
@@ -29,10 +29,12 @@ const SubscriptionsActions = ({ openCreate, t }) => {
         onClick={openCreate}
         size='small'
       >
-        {t('新建套餐')}
+        {t('新增套餐')}
       </Button>
     </div>
   );
 };
 
 export default SubscriptionsActions;
+
+
