@@ -1564,9 +1564,9 @@ const ClientLicensesTable = ({
         render: (text) => formatTime(text, t),
       },
       {
-        title: t('鏃堕暱(澶?'),
+        title: t('时长（天）'),
         dataIndex: 'duration_days',
-        render: (text) => (text && text > 0 ? `${text}d` : '-'),
+        render: (text) => (text && text > 0 ? `${text} ${t('天')}` : '-'),
       },
       {
         title: t('实际到期'),
@@ -1594,7 +1594,7 @@ const ClientLicensesTable = ({
           if (record.status === CLIENT_LICENSE_STATUS.ACTIVE && !isExpired(record)) {
             moreMenuItems.push({
               node: 'item',
-              name: t('绂佺敤'),
+              name: t('禁用'),
               type: 'warning',
               onClick: () => manageLicense(record, CLIENT_LICENSE_ACTIONS.DISABLE),
             });
@@ -1609,7 +1609,7 @@ const ClientLicensesTable = ({
           return (
             <Space>
               <Button size='small' onClick={() => copyText(record.code)}>
-                {t('澶嶅埗')}
+                {t('复制')}
               </Button>
               <Button
                 type='tertiary'
@@ -1619,7 +1619,7 @@ const ClientLicensesTable = ({
                   setShowEdit(true);
                 }}
               >
-                {t('缂栬緫')}
+                {t('编辑')}
               </Button>
               <Dropdown trigger='click' position='bottomRight' menu={moreMenuItems}>
                 <Button type='tertiary' size='small' icon={<IconMore />} />

@@ -37,6 +37,7 @@ import {
   IconPlay,
   IconFile,
   IconCopy,
+  IconKey,
 } from '@douyinfe/semi-icons';
 import { Link } from 'react-router-dom';
 import NoticeModal from '../../components/layout/NoticeModal';
@@ -222,6 +223,15 @@ const Home = () => {
                       icon={<IconPlay />}
                     >
                       {t('获取密钥')}
+                    </Button>
+                  </Link>
+                  <Link to='/client-key-redeem'>
+                    <Button
+                      size={isMobile ? 'default' : 'large'}
+                      className='flex items-center !rounded-3xl px-6 py-2'
+                      icon={<IconKey />}
+                    >
+                      {t('兑换 URL 与 Key')}
                     </Button>
                   </Link>
                   {isDemoSiteMode && statusState?.status?.version ? (

@@ -36,6 +36,7 @@ import Token from './pages/Token';
 import Redemption from './pages/Redemption';
 import ClientLicense from './pages/ClientLicense';
 import ClientRemoteConfig from './pages/ClientRemoteConfig';
+import ClientKeyRedeem from './pages/ClientKeyRedeem';
 import TopUp from './pages/TopUp';
 import Log from './pages/Log';
 import Chat from './pages/Chat';
@@ -179,6 +180,14 @@ function App() {
             <AdminRoute>
               <ClientRemoteConfig />
             </AdminRoute>
+          }
+        />
+        <Route
+          path='/client-key-redeem'
+          element={
+            <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+              <ClientKeyRedeem />
+            </Suspense>
           }
         />
         <Route
