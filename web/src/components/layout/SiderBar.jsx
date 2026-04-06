@@ -251,7 +251,8 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     return newRouterMap;
   };
 
-  // 鍔犺浇鑱婂ぉ椤?  useEffect(() => {
+  // 加载聊天项
+  useEffect(() => {
     let chats = localStorage.getItem('chats');
     if (chats) {
       try {
@@ -263,7 +264,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             let chat = {};
             for (let key in chats[i]) {
               let link = chats[i][key];
-              if (typeof link !== 'string') continue; // 纭繚閾炬帴鏄瓧绗︿覆
+              if (typeof link !== 'string') continue; // 确保链接是字符串
               if (link.startsWith('fluent') || link.startsWith('ccswitch')) {
                 shouldSkip = true;
                 break;
@@ -272,7 +273,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
               chat.itemKey = 'chat' + i;
               chat.to = '/console/chat/' + i;
             }
-            if (shouldSkip || !chat.text) continue; // 閬垮厤鎺ㄥ叆绌洪」
+            if (shouldSkip || !chat.text) continue; // 避免推入空项
             chatItems.push(chat);
           }
           setChatItems(chatItems);
@@ -284,14 +285,14 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     }
   }, []);
 
-  // 鏍规嵁褰撳墠璺緞璁剧疆閫変腑鐨勮彍鍗曢」
+  // 根据当前路径设置选中的菜单项
   useEffect(() => {
     const currentPath = location.pathname;
     let matchingKey = Object.keys(routerMapState).find(
       (key) => routerMapState[key] === currentPath,
     );
 
-    // 澶勭悊鑱婂ぉ璺敱
+    // 处理聊天路由
     if (!matchingKey && currentPath.startsWith('/console/chat/')) {
       const chatIndex = currentPath.split('/').pop();
       if (!isNaN(chatIndex)) {
@@ -301,7 +302,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
       }
     }
 
-    // 濡傛灉鎵惧埌鍖归厤鐨勯敭锛屾洿鏂伴€変腑鐨勯敭
+    // 如果找到匹配的键，则更新选中的键
     if (matchingKey) {
       setSelectedKeys([matchingKey]);
     }
@@ -316,11 +317,13 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     }
   }, [collapsed]);
 
-  // 閫変腑楂樹寒棰滆壊锛堢粺涓€锛?  const SELECTED_COLOR = 'var(--semi-color-primary)';
+  // 选中高亮颜色（统一）
+  const SELECTED_COLOR = 'var(--semi-color-primary)';
 
-  // 娓叉煋鑷畾涔夎彍鍗曢」
+  // 渲染自定义菜单项
   const renderNavItem = (item) => {
-    // 璺宠繃闅愯棌鐨勯」鐩?    if (item.className === 'tableHiddle') return null;
+    // 跳过隐藏的项目
+    if (item.className === 'tableHiddle') return null;
 
     const isSelected = selectedKeys.includes(item.itemKey);
     const textColor = isSelected ? SELECTED_COLOR : 'inherit';
@@ -424,7 +427,8 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             const to =
               routerMapState[props.itemKey] || routerMap[props.itemKey];
 
-            // 濡傛灉娌℃湁璺敱锛岀洿鎺ヨ繑鍥炲厓绱?            if (!to) return itemElement;
+            // 如果没有路由，直接返回元素
+            if (!to) return itemElement;
 
             return (
               <Link
