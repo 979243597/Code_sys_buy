@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2025 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
@@ -73,7 +73,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const workspaceItems = useMemo(() => {
     const items = [
       {
-        text: t('数据看板'),
+        text: t('鏁版嵁鐪嬫澘'),
         itemKey: 'detail',
         to: '/detail',
         className:
@@ -82,17 +82,17 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             : 'tableHiddle',
       },
       {
-        text: t('令牌管理'),
+        text: t('浠ょ墝绠＄悊'),
         itemKey: 'token',
         to: '/token',
       },
       {
-        text: t('使用日志'),
+        text: t('浣跨敤鏃ュ織'),
         itemKey: 'log',
         to: '/log',
       },
       {
-        text: t('绘图日志'),
+        text: t('缁樺浘鏃ュ織'),
         itemKey: 'midjourney',
         to: '/midjourney',
         className:
@@ -101,7 +101,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             : 'tableHiddle',
       },
       {
-        text: t('任务日志'),
+        text: t('浠诲姟鏃ュ織'),
         itemKey: 'task',
         to: '/task',
         className:
@@ -109,7 +109,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
       },
     ];
 
-    // 根据配置过滤项目
+    // 鏍规嵁閰嶇疆杩囨护椤圭洰
     const filteredItems = items.filter((item) => {
       const configVisible = isModuleVisible('console', item.itemKey);
       return configVisible;
@@ -127,18 +127,18 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const financeItems = useMemo(() => {
     const items = [
       {
-        text: t('钱包管理'),
+        text: t('閽卞寘绠＄悊'),
         itemKey: 'topup',
         to: '/topup',
       },
       {
-        text: t('个人设置'),
+        text: t('涓汉璁剧疆'),
         itemKey: 'personal',
         to: '/personal',
       },
     ];
 
-    // 根据配置过滤项目
+    // 鏍规嵁閰嶇疆杩囨护椤圭洰
     const filteredItems = items.filter((item) => {
       const configVisible = isModuleVisible('personal', item.itemKey);
       return configVisible;
@@ -150,7 +150,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const adminItems = useMemo(() => {
     const items = [
       {
-        text: t('渠道管理'),
+        text: t('娓犻亾绠＄悊'),
         itemKey: 'channel',
         to: '/channel',
         className: isAdmin() ? '' : 'tableHiddle',
@@ -162,13 +162,13 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
-        text: t('模型管理'),
+        text: t('妯″瀷绠＄悊'),
         itemKey: 'models',
         to: '/console/models',
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
-        text: t('模型部署'),
+        text: t('妯″瀷閮ㄧ讲'),
         itemKey: 'deployment',
         to: '/deployment',
         className: isAdmin() ? '' : 'tableHiddle',
@@ -205,7 +205,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
       },
     ];
 
-    // 根据配置过滤项目
+    // 鏍规嵁閰嶇疆杩囨护椤圭洰
     const filteredItems = items.filter((item) => {
       const configVisible = isModuleVisible('admin', item.itemKey);
       return configVisible;
@@ -217,18 +217,18 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const chatMenuItems = useMemo(() => {
     const items = [
       {
-        text: t('操练场'),
+        text: t('鎿嶇粌鍦?),
         itemKey: 'playground',
         to: '/playground',
       },
       {
-        text: t('聊天'),
+        text: t('鑱婂ぉ'),
         itemKey: 'chat',
         items: chatItems,
       },
     ];
 
-    // 根据配置过滤项目
+    // 鏍规嵁閰嶇疆杩囨护椤圭洰
     const filteredItems = items.filter((item) => {
       const configVisible = isModuleVisible('chat', item.itemKey);
       return configVisible;
@@ -251,8 +251,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     return newRouterMap;
   };
 
-  // 加载聊天项
-  useEffect(() => {
+  // 鍔犺浇鑱婂ぉ椤?  useEffect(() => {
     let chats = localStorage.getItem('chats');
     if (chats) {
       try {
@@ -264,7 +263,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             let chat = {};
             for (let key in chats[i]) {
               let link = chats[i][key];
-              if (typeof link !== 'string') continue; // 确保链接是字符串
+              if (typeof link !== 'string') continue; // 纭繚閾炬帴鏄瓧绗︿覆
               if (link.startsWith('fluent') || link.startsWith('ccswitch')) {
                 shouldSkip = true;
                 break;
@@ -273,26 +272,26 @@ const SiderBar = ({ onNavigate = () => {} }) => {
               chat.itemKey = 'chat' + i;
               chat.to = '/console/chat/' + i;
             }
-            if (shouldSkip || !chat.text) continue; // 避免推入空项
+            if (shouldSkip || !chat.text) continue; // 閬垮厤鎺ㄥ叆绌洪」
             chatItems.push(chat);
           }
           setChatItems(chatItems);
           updateRouterMapWithChats(chats);
         }
       } catch (e) {
-        showError('聊天数据解析失败');
+        showError('鑱婂ぉ鏁版嵁瑙ｆ瀽澶辫触');
       }
     }
   }, []);
 
-  // 根据当前路径设置选中的菜单项
+  // 鏍规嵁褰撳墠璺緞璁剧疆閫変腑鐨勮彍鍗曢」
   useEffect(() => {
     const currentPath = location.pathname;
     let matchingKey = Object.keys(routerMapState).find(
       (key) => routerMapState[key] === currentPath,
     );
 
-    // 处理聊天路由
+    // 澶勭悊鑱婂ぉ璺敱
     if (!matchingKey && currentPath.startsWith('/console/chat/')) {
       const chatIndex = currentPath.split('/').pop();
       if (!isNaN(chatIndex)) {
@@ -302,13 +301,13 @@ const SiderBar = ({ onNavigate = () => {} }) => {
       }
     }
 
-    // 如果找到匹配的键，更新选中的键
+    // 濡傛灉鎵惧埌鍖归厤鐨勯敭锛屾洿鏂伴€変腑鐨勯敭
     if (matchingKey) {
       setSelectedKeys([matchingKey]);
     }
   }, [location.pathname, routerMapState]);
 
-  // 监控折叠状态变化以更新 body class
+  // 监听折叠状态变化以更新 body class
   useEffect(() => {
     if (collapsed) {
       document.body.classList.add('sidebar-collapsed');
@@ -317,13 +316,11 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     }
   }, [collapsed]);
 
-  // 选中高亮颜色（统一）
-  const SELECTED_COLOR = 'var(--semi-color-primary)';
+  // 閫変腑楂樹寒棰滆壊锛堢粺涓€锛?  const SELECTED_COLOR = 'var(--semi-color-primary)';
 
-  // 渲染自定义菜单项
+  // 娓叉煋鑷畾涔夎彍鍗曢」
   const renderNavItem = (item) => {
-    // 跳过隐藏的项目
-    if (item.className === 'tableHiddle') return null;
+    // 璺宠繃闅愯棌鐨勯」鐩?    if (item.className === 'tableHiddle') return null;
 
     const isSelected = selectedKeys.includes(item.itemKey);
     const textColor = isSelected ? SELECTED_COLOR : 'inherit';
@@ -350,7 +347,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     );
   };
 
-  // 渲染子菜单项
+  // 娓叉煋瀛愯彍鍗曢」
   const renderSubItem = (item) => {
     if (item.items && item.items.length > 0) {
       const isSelected = selectedKeys.includes(item.itemKey);
@@ -427,8 +424,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             const to =
               routerMapState[props.itemKey] || routerMap[props.itemKey];
 
-            // 如果没有路由，直接返回元素
-            if (!to) return itemElement;
+            // 濡傛灉娌℃湁璺敱锛岀洿鎺ヨ繑鍥炲厓绱?            if (!to) return itemElement;
 
             return (
               <Link
@@ -441,7 +437,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             );
           }}
           onSelect={(key) => {
-            // 如果点击的是已经展开的子菜单的父项，则收起子菜单
+            // 濡傛灉鐐瑰嚮鐨勬槸宸茬粡灞曞紑鐨勫瓙鑿滃崟鐨勭埗椤癸紝鍒欐敹璧峰瓙鑿滃崟
             if (openedKeys.includes(key.itemKey)) {
               setOpenedKeys(openedKeys.filter((k) => k !== key.itemKey));
             }
@@ -453,49 +449,49 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             setOpenedKeys(data.openKeys);
           }}
         >
-          {/* 聊天区域 */}
+          {/* 鑱婂ぉ鍖哄煙 */}
           {hasSectionVisibleModules('chat') && (
             <div className='sidebar-section'>
               {!collapsed && (
-                <div className='sidebar-group-label'>{t('聊天')}</div>
+                <div className='sidebar-group-label'>{t('鑱婂ぉ')}</div>
               )}
               {chatMenuItems.map((item) => renderSubItem(item))}
             </div>
           )}
 
-          {/* 控制台区域 */}
+          {/* 鎺у埗鍙板尯鍩?*/}
           {hasSectionVisibleModules('console') && (
             <>
               <Divider className='sidebar-divider' />
               <div>
                 {!collapsed && (
-                  <div className='sidebar-group-label'>{t('控制台')}</div>
+                  <div className='sidebar-group-label'>{t('鎺у埗鍙?)}</div>
                 )}
                 {workspaceItems.map((item) => renderNavItem(item))}
               </div>
             </>
           )}
 
-          {/* 个人中心区域 */}
+          {/* 涓汉涓績鍖哄煙 */}
           {hasSectionVisibleModules('personal') && (
             <>
               <Divider className='sidebar-divider' />
               <div>
                 {!collapsed && (
-                  <div className='sidebar-group-label'>{t('个人中心')}</div>
+                  <div className='sidebar-group-label'>{t('涓汉涓績')}</div>
                 )}
                 {financeItems.map((item) => renderNavItem(item))}
               </div>
             </>
           )}
 
-          {/* 管理员区域 - 只在管理员时显示且配置允许时显示 */}
+          {/* 绠＄悊鍛樺尯鍩?- 鍙湪绠＄悊鍛樻椂鏄剧ず涓旈厤缃厑璁告椂鏄剧ず */}
           {isAdmin() && hasSectionVisibleModules('admin') && (
             <>
               <Divider className='sidebar-divider' />
               <div>
                 {!collapsed && (
-                  <div className='sidebar-group-label'>{t('管理员')}</div>
+                  <div className='sidebar-group-label'>{t('绠＄悊鍛?)}</div>
                 )}
                 {adminItems.map((item) => renderNavItem(item))}
               </div>
@@ -504,7 +500,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         </Nav>
       </SkeletonWrapper>
 
-      {/* 底部折叠按钮 */}
+      {/* 搴曢儴鎶樺彔鎸夐挳 */}
       <div className='sidebar-collapse-button'>
         <SkeletonWrapper
           loading={showSkeleton}
@@ -535,7 +531,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
                 : { padding: '4px 12px', width: '100%' }
             }
           >
-            {!collapsed ? t('收起侧边栏') : null}
+            {!collapsed ? t('鏀惰捣渚ц竟鏍?) : null}
           </Button>
         </SkeletonWrapper>
       </div>
@@ -544,3 +540,5 @@ const SiderBar = ({ onNavigate = () => {} }) => {
 };
 
 export default SiderBar;
+
+

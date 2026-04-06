@@ -1,4 +1,4 @@
-/*
+﻿/*
 Copyright (C) 2025 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
@@ -38,8 +38,7 @@ export default function SettingsSidebarModulesAdmin(props) {
   const [loading, setLoading] = useState(false);
   const [statusState, statusDispatch] = useContext(StatusContext);
 
-  // 左侧边栏模块管理状态（管理员全局控制）
-  const [sidebarModulesAdmin, setSidebarModulesAdmin] = useState({
+  // 宸︿晶杈规爮妯″潡绠＄悊鐘舵€侊紙绠＄悊鍛樺叏灞€鎺у埗锛?  const [sidebarModulesAdmin, setSidebarModulesAdmin] = useState({
     chat: {
       enabled: true,
       playground: true,
@@ -72,8 +71,7 @@ export default function SettingsSidebarModulesAdmin(props) {
     },
   });
 
-  // 处理区域级别开关变更
-  function handleSectionChange(sectionKey) {
+  // 澶勭悊鍖哄煙绾у埆寮€鍏冲彉鏇?  function handleSectionChange(sectionKey) {
     return (checked) => {
       const newModules = {
         ...sidebarModulesAdmin,
@@ -86,8 +84,7 @@ export default function SettingsSidebarModulesAdmin(props) {
     };
   }
 
-  // 处理功能级别开关变更
-  function handleModuleChange(sectionKey, moduleKey) {
+  // 澶勭悊鍔熻兘绾у埆寮€鍏冲彉鏇?  function handleModuleChange(sectionKey, moduleKey) {
     return (checked) => {
       const newModules = {
         ...sidebarModulesAdmin,
@@ -135,10 +132,10 @@ export default function SettingsSidebarModulesAdmin(props) {
       },
     };
     setSidebarModulesAdmin(defaultModules);
-    showSuccess(t('已重置为默认配置'));
+    showSuccess(t('宸查噸缃负榛樿閰嶇疆'));
   }
 
-  // 保存配置
+  // 淇濆瓨閰嶇疆
   async function onSubmit() {
     setLoading(true);
     try {
@@ -148,9 +145,9 @@ export default function SettingsSidebarModulesAdmin(props) {
       });
       const { success, message } = res.data;
       if (success) {
-        showSuccess(t('保存成功'));
+        showSuccess(t('淇濆瓨鎴愬姛'));
 
-        // 立即更新StatusContext中的状态
+        // 立即更新 StatusContext 中的状态
         statusDispatch({
           type: 'set',
           payload: {
@@ -159,23 +156,21 @@ export default function SettingsSidebarModulesAdmin(props) {
           },
         });
 
-        // 刷新父组件状态
-        if (props.refresh) {
+        // 鍒锋柊鐖剁粍浠剁姸鎬?        if (props.refresh) {
           await props.refresh();
         }
       } else {
         showError(message);
       }
     } catch (error) {
-      showError(t('保存失败，请重试'));
+      showError(t('淇濆瓨澶辫触锛岃閲嶈瘯'));
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    // 从 props.options 中获取配置
-    if (props.options && props.options.SidebarModulesAdmin) {
+    // 浠?props.options 涓幏鍙栭厤缃?    if (props.options && props.options.SidebarModulesAdmin) {
       try {
         const modules = JSON.parse(props.options.SidebarModulesAdmin);
         setSidebarModulesAdmin((prev) => ({
@@ -187,7 +182,7 @@ export default function SettingsSidebarModulesAdmin(props) {
           admin: { ...prev.admin, ...(modules.admin || {}) },
         }));
       } catch (error) {
-        // 使用默认配置
+        // 浣跨敤榛樿閰嶇疆
         const defaultModules = {
           chat: { enabled: true, playground: true, chat: true },
           console: {
@@ -217,61 +212,61 @@ export default function SettingsSidebarModulesAdmin(props) {
     }
   }, [props.options]);
 
-  // 区域配置数据
+  // 鍖哄煙閰嶇疆鏁版嵁
   const sectionConfigs = [
     {
       key: 'chat',
-      title: t('聊天区域'),
-      description: t('操练场和聊天功能'),
+      title: t('鑱婂ぉ鍖哄煙'),
+      description: t('鎿嶇粌鍦哄拰鑱婂ぉ鍔熻兘'),
       modules: [
         {
           key: 'playground',
-          title: t('操练场'),
-          description: t('AI模型测试环境'),
+          title: t('鎿嶇粌鍦?),
+          description: t('AI妯″瀷娴嬭瘯鐜'),
         },
-        { key: 'chat', title: t('聊天'), description: t('聊天会话管理') },
+        { key: 'chat', title: t('鑱婂ぉ'), description: t('鑱婂ぉ浼氳瘽绠＄悊') },
       ],
     },
     {
       key: 'console',
-      title: t('控制台区域'),
-      description: t('数据管理和日志查看'),
+      title: t('鎺у埗鍙板尯鍩?),
+      description: t('鏁版嵁绠＄悊鍜屾棩蹇楁煡鐪?),
       modules: [
-        { key: 'detail', title: t('数据看板'), description: t('系统数据统计') },
-        { key: 'token', title: t('令牌管理'), description: t('API令牌管理') },
-        { key: 'log', title: t('使用日志'), description: t('API使用记录') },
+        { key: 'detail', title: t('鏁版嵁鐪嬫澘'), description: t('绯荤粺鏁版嵁缁熻') },
+        { key: 'token', title: t('浠ょ墝绠＄悊'), description: t('API浠ょ墝绠＄悊') },
+        { key: 'log', title: t('浣跨敤鏃ュ織'), description: t('API浣跨敤璁板綍') },
         {
           key: 'midjourney',
-          title: t('绘图日志'),
-          description: t('绘图任务记录'),
+          title: t('缁樺浘鏃ュ織'),
+          description: t('缁樺浘浠诲姟璁板綍'),
         },
-        { key: 'task', title: t('任务日志'), description: t('系统任务记录') },
+        { key: 'task', title: t('浠诲姟鏃ュ織'), description: t('绯荤粺浠诲姟璁板綍') },
       ],
     },
     {
       key: 'personal',
-      title: t('个人中心区域'),
-      description: t('用户个人功能'),
+      title: t('涓汉涓績鍖哄煙'),
+      description: t('鐢ㄦ埛涓汉鍔熻兘'),
       modules: [
-        { key: 'topup', title: t('钱包管理'), description: t('余额充值管理') },
+        { key: 'topup', title: t('閽卞寘绠＄悊'), description: t('浣欓鍏呭€肩鐞?) },
         {
           key: 'personal',
-          title: t('个人设置'),
-          description: t('个人信息设置'),
+          title: t('涓汉璁剧疆'),
+          description: t('涓汉淇℃伅璁剧疆'),
         },
       ],
     },
     {
       key: 'admin',
-      title: t('管理员区域'),
-      description: t('系统管理功能'),
+      title: t('绠＄悊鍛樺尯鍩?),
+      description: t('绯荤粺绠＄悊鍔熻兘'),
       modules: [
-        { key: 'channel', title: t('渠道管理'), description: t('API渠道配置') },
-        { key: 'models', title: t('模型管理'), description: t('AI模型配置') },
+        { key: 'channel', title: t('娓犻亾绠＄悊'), description: t('API娓犻亾閰嶇疆') },
+        { key: 'models', title: t('妯″瀷绠＄悊'), description: t('AI妯″瀷閰嶇疆') },
         {
           key: 'deployment',
-          title: t('模型部署'),
-          description: t('模型部署管理'),
+          title: t('妯″瀷閮ㄧ讲'),
+          description: t('妯″瀷閮ㄧ讲绠＄悊'),
         },
         {
           key: 'subscription',
@@ -306,14 +301,14 @@ export default function SettingsSidebarModulesAdmin(props) {
   return (
     <Card>
       <Form.Section
-        text={t('侧边栏管理（全局控制）')}
+        text={t('渚ц竟鏍忕鐞嗭紙鍏ㄥ眬鎺у埗锛?)}
         extraText={t(
-          '全局控制侧边栏区域和功能显示，管理员隐藏的功能用户无法启用',
+          '鍏ㄥ眬鎺у埗渚ц竟鏍忓尯鍩熷拰鍔熻兘鏄剧ず锛岀鐞嗗憳闅愯棌鐨勫姛鑳界敤鎴锋棤娉曞惎鐢?,
         )}
       >
         {sectionConfigs.map((section) => (
           <div key={section.key} style={{ marginBottom: '32px' }}>
-            {/* 区域标题和总开关 */}
+            {/* 鍖哄煙鏍囬鍜屾€诲紑鍏?*/}
             <div
               style={{
                 display: 'flex',
@@ -356,7 +351,7 @@ export default function SettingsSidebarModulesAdmin(props) {
               />
             </div>
 
-            {/* 功能模块网格 */}
+            {/* 鍔熻兘妯″潡缃戞牸 */}
             <Row gutter={[16, 16]}>
               {section.modules.map((module) => (
                 <Col key={module.key} xs={24} sm={12} md={8} lg={6} xl={6}>
@@ -452,10 +447,12 @@ export default function SettingsSidebarModulesAdmin(props) {
               minWidth: '100px',
             }}
           >
-            {t('保存设置')}
+            {t('淇濆瓨璁剧疆')}
           </Button>
         </div>
       </Form.Section>
     </Card>
   );
 }
+
+
