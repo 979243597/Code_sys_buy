@@ -24,19 +24,6 @@ import { useTranslation } from 'react-i18next';
 import { API, copy, showError, showSuccess } from '../../helpers';
 import { StatusContext } from '../../context/Status';
 
-const getOrCreateRedeemDeviceHash = () => {
-  const storageKey = 'client_key_redeem_device_hash';
-  const cached = localStorage.getItem(storageKey);
-  if (cached) return cached;
-
-  const seed =
-    window.crypto?.randomUUID?.() ||
-    `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-  const hash = `web-${seed}`;
-  localStorage.setItem(storageKey, hash);
-  return hash;
-};
-
 const formatTime = (value, emptyText = '-') => {
   if (!value) return emptyText;
   const parsed = new Date(value);
@@ -170,7 +157,6 @@ const ClientKeyRedeemPage = () => {
 
   const requestPayload = (normalizedCode) => ({
     code: normalizedCode,
-    device_hash: getOrCreateRedeemDeviceHash(),
   });
 
   const handleRedeem = async () => {
