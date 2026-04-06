@@ -52,63 +52,76 @@ var defaultModelRatio = map[string]float64{
 	"gpt-4o-realtime-preview-2024-12-17":      2.5,
 	"gpt-4o-mini-realtime-preview":            0.3,
 	"gpt-4o-mini-realtime-preview-2024-12-17": 0.3,
-	"gpt-4.1":                          1.0,  // $2 / 1M tokens
-	"gpt-4.1-2025-04-14":               1.0,  // $2 / 1M tokens
-	"gpt-4.1-mini":                     0.2,  // $0.4 / 1M tokens
-	"gpt-4.1-mini-2025-04-14":          0.2,  // $0.4 / 1M tokens
-	"gpt-4.1-nano":                     0.05, // $0.1 / 1M tokens
-	"gpt-4.1-nano-2025-04-14":          0.05, // $0.1 / 1M tokens
-	"gpt-image-1":                      2.5,  // $5 / 1M tokens
-	"o1":                               7.5,  // $15 / 1M tokens
-	"o1-2024-12-17":                    7.5,  // $15 / 1M tokens
-	"o1-preview":                       7.5,  // $15 / 1M tokens
-	"o1-preview-2024-09-12":            7.5,  // $15 / 1M tokens
-	"o1-mini":                          0.55, // $1.1 / 1M tokens
-	"o1-mini-2024-09-12":               0.55, // $1.1 / 1M tokens
-	"o1-pro":                           75.0, // $150 / 1M tokens
-	"o1-pro-2025-03-19":                75.0, // $150 / 1M tokens
-	"o3-mini":                          0.55,
-	"o3-mini-2025-01-31":               0.55,
-	"o3-mini-high":                     0.55,
-	"o3-mini-2025-01-31-high":          0.55,
-	"o3-mini-low":                      0.55,
-	"o3-mini-2025-01-31-low":           0.55,
-	"o3-mini-medium":                   0.55,
-	"o3-mini-2025-01-31-medium":        0.55,
-	"o3":                               1.0,  // $2 / 1M tokens
-	"o3-2025-04-16":                    1.0,  // $2 / 1M tokens
-	"o3-pro":                           10.0, // $20 / 1M tokens
-	"o3-pro-2025-06-10":                10.0, // $20 / 1M tokens
-	"o3-deep-research":                 5.0,  // $10 / 1M tokens
-	"o3-deep-research-2025-06-26":      5.0,  // $10 / 1M tokens
-	"o4-mini":                          0.55, // $1.1 / 1M tokens
-	"o4-mini-2025-04-16":               0.55, // $1.1 / 1M tokens
-	"o4-mini-deep-research":            1.0,  // $2 / 1M tokens
-	"o4-mini-deep-research-2025-06-26": 1.0,  // $2 / 1M tokens
-	"gpt-4o-mini":                      0.075,
-	"gpt-4o-mini-2024-07-18":           0.075,
-	"gpt-4-turbo":                      5, // $0.01 / 1K tokens
-	"gpt-4-turbo-2024-04-09":           5, // $0.01 / 1K tokens
-	"gpt-4.5-preview":                  37.5,
-	"gpt-4.5-preview-2025-02-27":       37.5,
-	"gpt-5":                            0.625,
-	"gpt-5-2025-08-07":                 0.625,
-	"gpt-5-chat-latest":                0.625,
-	"gpt-5-codex":                      0.625,
-	"gpt-5-codex-mini":                 0.75,
-	"gpt-5.1":                          0.625,
-	"gpt-5.1-codex":                    0.625,
-	"gpt-5.1-codex-mini":               0.125,
-	"gpt-5.1-codex-max":                0.625,
-	"gpt-5.2":                          0.875,
-	"gpt-5.2-codex":                    0.875,
-	"gpt-5.3-codex":                    0.875,
-	"gpt-5.4":                          1.25,
-	"gpt-5.4-mini":                     0.375,
-	"gpt-5-mini":                       0.125,
-	"gpt-5-mini-2025-08-07":            0.125,
-	"gpt-5-nano":                       0.025,
-	"gpt-5-nano-2025-08-07":            0.025,
+	"gpt-4.1":                            1.0,  // $2 / 1M tokens
+	"gpt-4.1-2025-04-14":                 1.0,  // $2 / 1M tokens
+	"gpt-4.1-mini":                       0.2,  // $0.4 / 1M tokens
+	"gpt-4.1-mini-2025-04-14":            0.2,  // $0.4 / 1M tokens
+	"gpt-4.1-nano":                       0.05, // $0.1 / 1M tokens
+	"gpt-4.1-nano-2025-04-14":            0.05, // $0.1 / 1M tokens
+	"gpt-image-1":                        2.5,  // $5 / 1M tokens
+	"o1":                                 7.5,  // $15 / 1M tokens
+	"o1-2024-12-17":                      7.5,  // $15 / 1M tokens
+	"o1-preview":                         7.5,  // $15 / 1M tokens
+	"o1-preview-2024-09-12":              7.5,  // $15 / 1M tokens
+	"o1-mini":                            0.55, // $1.1 / 1M tokens
+	"o1-mini-2024-09-12":                 0.55, // $1.1 / 1M tokens
+	"o1-pro":                             75.0, // $150 / 1M tokens
+	"o1-pro-2025-03-19":                  75.0, // $150 / 1M tokens
+	"o3-mini":                            0.55,
+	"o3-mini-2025-01-31":                 0.55,
+	"o3-mini-high":                       0.55,
+	"o3-mini-2025-01-31-high":            0.55,
+	"o3-mini-low":                        0.55,
+	"o3-mini-2025-01-31-low":             0.55,
+	"o3-mini-medium":                     0.55,
+	"o3-mini-2025-01-31-medium":          0.55,
+	"o3":                                 1.0,  // $2 / 1M tokens
+	"o3-2025-04-16":                      1.0,  // $2 / 1M tokens
+	"o3-pro":                             10.0, // $20 / 1M tokens
+	"o3-pro-2025-06-10":                  10.0, // $20 / 1M tokens
+	"o3-deep-research":                   5.0,  // $10 / 1M tokens
+	"o3-deep-research-2025-06-26":        5.0,  // $10 / 1M tokens
+	"o4-mini":                            0.55, // $1.1 / 1M tokens
+	"o4-mini-2025-04-16":                 0.55, // $1.1 / 1M tokens
+	"o4-mini-deep-research":              1.0,  // $2 / 1M tokens
+	"o4-mini-deep-research-2025-06-26":   1.0,  // $2 / 1M tokens
+	"gpt-4o-mini":                        0.075,
+	"gpt-4o-mini-2024-07-18":             0.075,
+	"gpt-4-turbo":                        5, // $0.01 / 1K tokens
+	"gpt-4-turbo-2024-04-09":             5, // $0.01 / 1K tokens
+	"gpt-4.5-preview":                    37.5,
+	"gpt-4.5-preview-2025-02-27":         37.5,
+	"gpt-5":                              0.625,
+	"gpt-5-2025-08-07":                   0.625,
+	"gpt-5-chat-latest":                  0.625,
+	"gpt-5-openai-compact":               0.625,
+	"gpt-5-codex":                        0.625,
+	"gpt-5-codex-openai-compact":         0.625,
+	"gpt-5-codex-mini":                   0.75,
+	"gpt-5-codex-mini-openai-compact":    0.75,
+	"gpt-5.1":                            0.625,
+	"gpt-5.1-openai-compact":             0.625,
+	"gpt-5.1-codex":                      0.625,
+	"gpt-5.1-codex-openai-compact":       0.625,
+	"gpt-5.1-codex-mini":                 0.125,
+	"gpt-5.1-codex-mini-openai-compact":  0.125,
+	"gpt-5.1-codex-max":                  0.625,
+	"gpt-5.1-codex-max-openai-compact":   0.625,
+	"gpt-5.2":                            0.875,
+	"gpt-5.2-openai-compact":             0.875,
+	"gpt-5.2-codex":                      0.875,
+	"gpt-5.2-codex-openai-compact":       0.875,
+	"gpt-5.3-codex":                      0.875,
+	"gpt-5.3-codex-openai-compact":       0.875,
+	"gpt-5.3-codex-spark-openai-compact": 0.875,
+	"gpt-5.4":                            1.25,
+	"gpt-5.4-openai-compact":             1.25,
+	"gpt-5.4-mini":                       0.375,
+	"gpt-5.4-mini-openai-compact":        0.375,
+	"gpt-5-mini":                         0.125,
+	"gpt-5-mini-2025-08-07":              0.125,
+	"gpt-5-nano":                         0.025,
+	"gpt-5-nano-2025-08-07":              0.025,
 	//"gpt-3.5-turbo-0301":           0.75, //deprecated
 	"gpt-3.5-turbo":          0.25,
 	"gpt-3.5-turbo-0613":     0.75,
@@ -338,11 +351,24 @@ var modelRatioMap = types.NewRWMap[string, float64]()
 var completionRatioMap = types.NewRWMap[string, float64]()
 
 var defaultCompletionRatio = map[string]float64{
-	"gpt-4-gizmo-*":    2,
-	"gpt-4o-gizmo-*":   3,
-	"gpt-4-all":        2,
-	"gpt-image-1":      8,
-	"gpt-5-codex-mini": 4,
+	"gpt-4-gizmo-*":                      2,
+	"gpt-4o-gizmo-*":                     3,
+	"gpt-4-all":                          2,
+	"gpt-image-1":                        8,
+	"gpt-5-openai-compact":               8,
+	"gpt-5-codex-openai-compact":         8,
+	"gpt-5-codex-mini":                   4,
+	"gpt-5-codex-mini-openai-compact":    4,
+	"gpt-5.1-openai-compact":             8,
+	"gpt-5.1-codex-openai-compact":       8,
+	"gpt-5.1-codex-mini-openai-compact":  8,
+	"gpt-5.1-codex-max-openai-compact":   8,
+	"gpt-5.2-openai-compact":             8,
+	"gpt-5.2-codex-openai-compact":       8,
+	"gpt-5.3-codex-openai-compact":       8,
+	"gpt-5.3-codex-spark-openai-compact": 8,
+	"gpt-5.4-openai-compact":             6,
+	"gpt-5.4-mini-openai-compact":        6,
 }
 
 // InitRatioSettings initializes all model related settings maps
