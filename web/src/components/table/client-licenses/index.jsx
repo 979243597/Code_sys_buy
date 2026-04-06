@@ -208,7 +208,7 @@ const formatExpires = (record, t) => {
   if (record?.duration_days > 0) {
     return t('激活后 {{count}} 天', { count: record.duration_days });
   }
-  return t('姘镐笉杩囨湡');
+  return t('永不过期');
 };
 
 const formatSubscriptionResetPeriod = (record, t) => {
@@ -1367,9 +1367,9 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                     <IconKey size='small' />
                   </Avatar>
                   <div>
-                    <Typography.Text strong>{t('璁惧缁戝畾')}</Typography.Text>
+                    <Typography.Text strong>{t('设备绑定')}</Typography.Text>
                     <div className='text-xs text-gray-600'>
-                      {t('鍙€夛細鎵嬪姩缁存姢璁惧鍝堝笇锛岀敤浜庨攣瀹氭垨閲婃斁鎸囧畾璁惧')}
+                      {t('可选：手动维护设备哈希，用于锁定或释放指定设备')}
                     </div>
                   </div>
                 </div>
@@ -1377,7 +1377,7 @@ const EditClientLicenseModal = ({ editingLicense, visible, onClose, refresh, t }
                   <Col span={24}>
                     <Form.Input
                       field='device_hash'
-                      label={t('璁惧鍝堝笇')}
+                      label={t('设备哈希')}
                       placeholder={t('留空表示未绑定设备')}
                       showClear
                     />
@@ -1470,7 +1470,7 @@ const ClientLicensesTable = ({
           ),
       },
       {
-        title: t('缁戝畾璁惧'),
+        title: t('绑定设备'),
         dataIndex: 'device_hash',
         render: (text) => (
           <Popover content={text || t('未绑定')} position='top'>
@@ -1539,12 +1539,12 @@ const ClientLicensesTable = ({
           ),
       },
       {
-        title: t('涓嬫閲嶇疆'),
+        title: t('下次重置'),
         dataIndex: 'subscription_next_reset_time',
         render: (text, record) =>
           record.subscription_plan_id
             ? record.user_subscription_id
-              ? formatTime(text, t, '鏈缃?)
+              ? formatTime(text, t, '未设置')
               : t('待激活')
             : '-',
       },
